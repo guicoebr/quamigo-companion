@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, Weight, PawPrint } from "lucide-react";
+import { ArrowLeft, Calendar, Weight, PawPrint, Pencil } from "lucide-react";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,11 +57,20 @@ function PetDetalhe() {
         title={pet.nome}
         description={`${especie?.nome ?? "—"} • ${raca?.nome ?? "—"} • ${pet.sexo === "macho" ? "Macho" : "Fêmea"}`}
         actions={
-          <Button asChild variant="outline">
-            <Link to="/pets">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/pets">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+              </Link>
+            </Button>
+            <RoleGuard permission="pet.editar">
+              <Button asChild>
+                <Link to="/pets/$id/editar" params={{ id: pet.id }}>
+                  <Pencil className="mr-2 h-4 w-4" /> Editar pet
+                </Link>
+              </Button>
+            </RoleGuard>
+          </div>
         }
       />
 
