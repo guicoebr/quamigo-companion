@@ -71,6 +71,7 @@ function ContratoDetalhe() {
   >[];
   const cobrancas = pagamentos.filter((p) => p.contratoId === c.id);
 
+  const contrato = c;
   function handleGerarCobranca() {
     const agora = new Date();
     const yyyy = agora.getFullYear();
@@ -93,15 +94,15 @@ function ContratoDetalhe() {
       id: `pag-new-${Date.now()}`,
       numero,
       origem: "contrato",
-      contratoId: c.id,
-      tutorId: c.tutorId,
-      valorTotal: c.valorMensal,
+      contratoId: contrato.id,
+      tutorId: contrato.tutorId,
+      valorTotal: contrato.valorMensal,
       status: "aberto",
       parcelas: [
         {
           id: `par-${Date.now()}`,
           numero: 1,
-          valor: c.valorMensal,
+          valor: contrato.valorMensal,
           vencimento: venc.toISOString().slice(0, 10),
           status: "pendente",
         },
