@@ -22,6 +22,7 @@ export const ROUTE_ACCESS: Array<{ pattern: RegExp; roles: Role[] }> = [
 
   { pattern: /^\/pets$/, roles: ALL_ROLES },
   { pattern: /^\/pets\/novo$/, roles: ["admin", "operacional", "recepcao"] },
+  { pattern: /^\/pets\/[^/]+\/editar$/, roles: ["admin", "operacional"] },
   { pattern: /^\/pets\/[^/]+$/, roles: ALL_ROLES },
 
   { pattern: /^\/obitos\/novo$/, roles: ["admin", "operacional"] },
@@ -53,6 +54,7 @@ export const PERMISSIONS: Record<Role, Permission[]> = {
     "tutor.criar",
     "tutor.editar",
     "pet.criar",
+    "pet.editar",
     "obito.registrar",
     "os.criar",
     "os.avancar_status",
@@ -67,6 +69,7 @@ export const PERMISSIONS: Record<Role, Permission[]> = {
     "tutor.criar",
     "tutor.editar",
     "pet.criar",
+    "pet.editar",
     "obito.registrar",
     "os.criar",
     "os.avancar_status",
