@@ -1,13 +1,179 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Search, Plus, Eye } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
-import { DataTablePlaceholder } from "@/components/tables/DataTablePlaceholder";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { StatusBadge } from "@/components/status/StatusBadge";
+import { RoleGuard } from "@/components/auth/RoleGuard";
+import { useMockData, findTutor, findEspecie, findRaca } from "@/hooks/useMockData";
+import { formatDate } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/pets")({
   head: () => ({ meta: [{ title: "Pets — +QAmigo" }] }),
-  component: () => (
-    <>
-      <PageHeader title="Pets" description="Gestão de pets. (Bloco 5)" />
-      <DataTablePlaceholder />
-    </>
-  ),
+  component: PetsPage,
 });
+
+function PetsPage() {
+  const { pets, especies } = useMockData();
+  const [busca, setBusca] = useState("");
+  const [especieId, setEspecieId] = useState<string>("todas");
+  const [situacao, setSituacao] = useState<"todas" | "vivos" | "falecidos">("todas");
+
+  const filtrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    return pets.filter((p) => {
+      const tutor = findTutor(p.tutorId);
+      const matchTexto =
+        !termo ||
+        p.nome.toLowerCase().includes(termo) ||
+        (tutor?.nome.toLowerCase().includes(termo) ?? false);
+      const matchEspecie = especieId === "todas" || p.especieId === especieId;
+      const matchSituacao =
+        situacao === "todas" ||
+        (situacao === "vivos" && !p.dataFalecimento) ||
+        (situacao === "falecidos" && !!p.dataFalecimento);
+      return matchTexto && matchEspecie && matchSituacao;
+    });
+  }, [pets, busca, especieId, situacao]);
+
+  return (
+    <>
+      <PageHeader
+        title="Pets"
+        description={`${filtrados.length} de ${pets.length} pet(s).`}
+        actions={
+          <RoleGuard allowed={["admin", "operacional", "recepcao"]}>
+            <Button disabled title="Cadastro disponível em bloco futuro">
+              <Plus className="mr-2 h-4 w-4" /> Novo pet
+            </Button>
+          </RoleGuard>
+        }
+      />
+
+      <Card className="rounded-[12px]">
+        <CardContent className="p-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por pet ou tutor"
+                className="pl-9"
+              />
+            </div>
+            <Select value={especieId} onValueChange={setEspecieId}>
+              <SelectTrigger className="sm:w-48">
+                <SelectValue placeholder="Espécie" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as espécies</SelectItem>
+                {especies.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={situacao} onValueChange={(v) => setSituacao(v as typeof situacao)}>
+              <SelectTrigger className="sm:w-44">
+                <SelectValue placeholder="Situação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="vivos">Vivos</SelectItem>
+                <SelectItem value="falecidos">Falecidos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Pet</TableHead>
+                  <TableHead>Espécie / Raça</TableHead>
+                  <TableHead>Tutor</TableHead>
+                  <TableHead className="text-right">Peso</TableHead>
+                  <TableHead>Situação</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtrados.map((p) => {
+                  const tutor = findTutor(p.tutorId);
+                  const especie = findEspecie(p.especieId);
+                  const raca = findRaca(p.racaId);
+                  return (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.nome}</TableCell>
+                      <TableCell>
+                        {especie?.nome ?? "—"} • {raca?.nome ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        {tutor ? (
+                          <Link
+                            to="/tutores/$id"
+                            params={{ id: tutor.id }}
+                            className="text-primary hover:underline"
+                          >
+                            {tutor.nome}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{p.pesoKg} kg</TableCell>
+                      <TableCell>
+                        {p.dataFalecimento ? (
+                          <StatusBadge
+                            label={`Falecido em ${formatDate(p.dataFalecimento)}`}
+                            tone="neutral"
+                          />
+                        ) : (
+                          <StatusBadge label="Vivo" tone="success" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button asChild size="icon" variant="ghost">
+                          <Link to="/pets/$id" params={{ id: p.id }} aria-label={`Ver ${p.nome}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filtrados.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                      Nenhum pet encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          {/* TODO(api): substituir por createServerFn + TanStack Query. */}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
