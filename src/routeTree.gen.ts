@@ -9,38 +9,197 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppTutoresRouteImport } from './routes/_app.tutores'
+import { Route as AppServicosProdutosRouteImport } from './routes/_app.servicos-produtos'
+import { Route as AppPetsRouteImport } from './routes/_app.pets'
+import { Route as AppPagamentosRouteImport } from './routes/_app.pagamentos'
+import { Route as AppOrdensServicoRouteImport } from './routes/_app.ordens-servico'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppContratosRouteImport } from './routes/_app.contratos'
+import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppBrandBookRouteImport } from './routes/_app.brand-book'
+import { Route as AppObitosNovoRouteImport } from './routes/_app.obitos.novo'
 
+const UnauthorizedRoute = UnauthorizedRouteImport.update({
+  id: '/unauthorized',
+  path: '/unauthorized',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppTutoresRoute = AppTutoresRouteImport.update({
+  id: '/tutores',
+  path: '/tutores',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppServicosProdutosRoute = AppServicosProdutosRouteImport.update({
+  id: '/servicos-produtos',
+  path: '/servicos-produtos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPetsRoute = AppPetsRouteImport.update({
+  id: '/pets',
+  path: '/pets',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPagamentosRoute = AppPagamentosRouteImport.update({
+  id: '/pagamentos',
+  path: '/pagamentos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrdensServicoRoute = AppOrdensServicoRouteImport.update({
+  id: '/ordens-servico',
+  path: '/ordens-servico',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContratosRoute = AppContratosRouteImport.update({
+  id: '/contratos',
+  path: '/contratos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBrandBookRoute = AppBrandBookRouteImport.update({
+  id: '/brand-book',
+  path: '/brand-book',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppObitosNovoRoute = AppObitosNovoRouteImport.update({
+  id: '/obitos/novo',
+  path: '/obitos/novo',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/unauthorized': typeof UnauthorizedRoute
+  '/brand-book': typeof AppBrandBookRoute
+  '/configuracoes': typeof AppConfiguracoesRoute
+  '/contratos': typeof AppContratosRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/ordens-servico': typeof AppOrdensServicoRoute
+  '/pagamentos': typeof AppPagamentosRoute
+  '/pets': typeof AppPetsRoute
+  '/servicos-produtos': typeof AppServicosProdutosRoute
+  '/tutores': typeof AppTutoresRoute
+  '/obitos/novo': typeof AppObitosNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/unauthorized': typeof UnauthorizedRoute
+  '/brand-book': typeof AppBrandBookRoute
+  '/configuracoes': typeof AppConfiguracoesRoute
+  '/contratos': typeof AppContratosRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/ordens-servico': typeof AppOrdensServicoRoute
+  '/pagamentos': typeof AppPagamentosRoute
+  '/pets': typeof AppPetsRoute
+  '/servicos-produtos': typeof AppServicosProdutosRoute
+  '/tutores': typeof AppTutoresRoute
+  '/obitos/novo': typeof AppObitosNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/unauthorized': typeof UnauthorizedRoute
+  '/_app/brand-book': typeof AppBrandBookRoute
+  '/_app/configuracoes': typeof AppConfiguracoesRoute
+  '/_app/contratos': typeof AppContratosRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/ordens-servico': typeof AppOrdensServicoRoute
+  '/_app/pagamentos': typeof AppPagamentosRoute
+  '/_app/pets': typeof AppPetsRoute
+  '/_app/servicos-produtos': typeof AppServicosProdutosRoute
+  '/_app/tutores': typeof AppTutoresRoute
+  '/_app/obitos/novo': typeof AppObitosNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/unauthorized'
+    | '/brand-book'
+    | '/configuracoes'
+    | '/contratos'
+    | '/dashboard'
+    | '/ordens-servico'
+    | '/pagamentos'
+    | '/pets'
+    | '/servicos-produtos'
+    | '/tutores'
+    | '/obitos/novo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/unauthorized'
+    | '/brand-book'
+    | '/configuracoes'
+    | '/contratos'
+    | '/dashboard'
+    | '/ordens-servico'
+    | '/pagamentos'
+    | '/pets'
+    | '/servicos-produtos'
+    | '/tutores'
+    | '/obitos/novo'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/unauthorized'
+    | '/_app/brand-book'
+    | '/_app/configuracoes'
+    | '/_app/contratos'
+    | '/_app/dashboard'
+    | '/_app/ordens-servico'
+    | '/_app/pagamentos'
+    | '/_app/pets'
+    | '/_app/servicos-produtos'
+    | '/_app/tutores'
+    | '/_app/obitos/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  UnauthorizedRoute: typeof UnauthorizedRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unauthorized': {
+      id: '/unauthorized'
+      path: '/unauthorized'
+      fullPath: '/unauthorized'
+      preLoaderRoute: typeof UnauthorizedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +207,111 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/tutores': {
+      id: '/_app/tutores'
+      path: '/tutores'
+      fullPath: '/tutores'
+      preLoaderRoute: typeof AppTutoresRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/servicos-produtos': {
+      id: '/_app/servicos-produtos'
+      path: '/servicos-produtos'
+      fullPath: '/servicos-produtos'
+      preLoaderRoute: typeof AppServicosProdutosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pets': {
+      id: '/_app/pets'
+      path: '/pets'
+      fullPath: '/pets'
+      preLoaderRoute: typeof AppPetsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/pagamentos': {
+      id: '/_app/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/pagamentos'
+      preLoaderRoute: typeof AppPagamentosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ordens-servico': {
+      id: '/_app/ordens-servico'
+      path: '/ordens-servico'
+      fullPath: '/ordens-servico'
+      preLoaderRoute: typeof AppOrdensServicoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/contratos': {
+      id: '/_app/contratos'
+      path: '/contratos'
+      fullPath: '/contratos'
+      preLoaderRoute: typeof AppContratosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/configuracoes': {
+      id: '/_app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AppConfiguracoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/brand-book': {
+      id: '/_app/brand-book'
+      path: '/brand-book'
+      fullPath: '/brand-book'
+      preLoaderRoute: typeof AppBrandBookRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/obitos/novo': {
+      id: '/_app/obitos/novo'
+      path: '/obitos/novo'
+      fullPath: '/obitos/novo'
+      preLoaderRoute: typeof AppObitosNovoRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppBrandBookRoute: typeof AppBrandBookRoute
+  AppConfiguracoesRoute: typeof AppConfiguracoesRoute
+  AppContratosRoute: typeof AppContratosRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppOrdensServicoRoute: typeof AppOrdensServicoRoute
+  AppPagamentosRoute: typeof AppPagamentosRoute
+  AppPetsRoute: typeof AppPetsRoute
+  AppServicosProdutosRoute: typeof AppServicosProdutosRoute
+  AppTutoresRoute: typeof AppTutoresRoute
+  AppObitosNovoRoute: typeof AppObitosNovoRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppBrandBookRoute: AppBrandBookRoute,
+  AppConfiguracoesRoute: AppConfiguracoesRoute,
+  AppContratosRoute: AppContratosRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppOrdensServicoRoute: AppOrdensServicoRoute,
+  AppPagamentosRoute: AppPagamentosRoute,
+  AppPetsRoute: AppPetsRoute,
+  AppServicosProdutosRoute: AppServicosProdutosRoute,
+  AppTutoresRoute: AppTutoresRoute,
+  AppObitosNovoRoute: AppObitosNovoRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  UnauthorizedRoute: UnauthorizedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
