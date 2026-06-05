@@ -20,10 +20,24 @@ import { useOSStore } from "@/store/osStore";
  */
 export function useMockData() {
   const novasOS = useOSStore((s) => s.novas);
+  const overrides = useOSStore((s) => s.overrides);
+  const ordensServico = [
+    ...novasOS,
+    ...ordensServicoMock.map((o) => {
+      const ov = overrides[o.id];
+      if (!ov) return o;
+      return {
+        ...o,
+        status: ov.status,
+        historico: ov.historico,
+        atualizadoEm: ov.historico[ov.historico.length - 1]?.ocorridoEm ?? o.atualizadoEm,
+      };
+    }),
+  ];
   return {
     tutores: tutoresMock,
     pets: petsMock,
-    ordensServico: [...novasOS, ...ordensServicoMock],
+    ordensServico,
     pagamentos: pagamentosMock,
     contratos: contratosMock,
     usuarios: usuariosMock,
@@ -31,6 +45,23 @@ export function useMockData() {
     racas: racasMock,
     modalidades: modalidadesMock,
     servicosProdutos: servicosProdutosMock,
+  };
+}
+
+/** Lookup de OS por id considerando novas + overrides. */
+export function findOS(id: string) {
+  const { novas, overrides } = useOSStore.getState();
+  const nova = novas.find((o) => o.id === id);
+  if (nova) return nova;
+  const base = ordensServicoMock.find((o) => o.id === id);
+  if (!base) return undefined;
+  const ov = overrides[id];
+  if (!ov) return base;
+  return {
+    ...base,
+    status: ov.status,
+    historico: ov.historico,
+    atualizadoEm: ov.historico[ov.historico.length - 1]?.ocorridoEm ?? base.atualizadoEm,
   };
 }
 
