@@ -27,6 +27,7 @@ export type Permission =
   | "tutor.criar"
   | "tutor.editar"
   | "pet.criar"
+  | "pet.editar"
   | "obito.registrar"
   | "os.criar"
   | "os.avancar_status"
