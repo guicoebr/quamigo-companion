@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, ChevronDown, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -176,9 +176,8 @@ function PagamentosPage() {
                   const meta = STATUS_PAG_LABEL[p.status];
                   const expandido = aberto === p.id;
                   return (
-                    <>
+                    <Fragment key={p.id}>
                       <TableRow
-                        key={p.id}
                         className="cursor-pointer"
                         onClick={() => setAberto(expandido ? null : p.id)}
                       >
@@ -213,13 +212,13 @@ function PagamentosPage() {
                         <TableCell className="text-muted-foreground">{formatDate(p.criadoEm)}</TableCell>
                       </TableRow>
                       {expandido && (
-                        <TableRow key={`${p.id}-exp`} className="bg-muted/30 hover:bg-muted/30">
+                        <TableRow className="bg-muted/30 hover:bg-muted/30">
                           <TableCell colSpan={8} className="p-4">
                             <ParcelasTable parcelas={p.parcelas} pagamentoId={p.id} />
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
                 {filtrados.length === 0 && (
