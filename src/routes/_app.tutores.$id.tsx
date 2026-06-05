@@ -133,7 +133,7 @@ function TutorDetalhe() {
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.nome}</TableCell>
                     <TableCell>
-                      {findEspecie(p.especieId)?.nome} • {findRaca(p.racaId)?.nome}
+                      {findEspecie(p.especieId)?.nome ?? "—"} • {findRaca(p.racaId)?.nome ?? "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{p.pesoKg} kg</TableCell>
                     <TableCell>
