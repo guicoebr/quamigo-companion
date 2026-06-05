@@ -22,10 +22,13 @@ import { cn } from "@/lib/utils";
 
 import { useMockData, findTutor, findEspecie } from "@/hooks/useMockData";
 import { useOSStore } from "@/store/osStore";
+import { useDataStore } from "@/store/dataStore";
 import { useAuthStore } from "@/store/authStore";
 import { ordensServicoMock } from "@/mocks/ordens_servico";
-import { nextOSNumber, formatBRL, formatCPF, formatDate } from "@/lib/formatters";
+import { pagamentosMock } from "@/mocks/pagamentos";
+import { nextOSNumber, nextPagamentoNumber, formatBRL, formatCPF, formatDate } from "@/lib/formatters";
 import type { OrdemServico, ItemOS } from "@/types/ordemServico";
+import type { Pagamento } from "@/types/pagamento";
 
 export const Route = createFileRoute("/_app/obitos/novo")({
   head: () => ({ meta: [{ title: "Registrar óbito — +QAmigo" }] }),
@@ -62,6 +65,7 @@ function RegistrarObitoPage() {
   const navigate = useNavigate();
   const { tutores, pets, modalidades, servicosProdutos } = useMockData();
   const addOS = useOSStore((s) => s.addOS);
+  const addPagamento = useDataStore((s) => s.addPagamento);
   const user = useAuthStore((s) => s.user);
 
   const [step, setStep] = useState(1);
@@ -135,8 +139,35 @@ function RegistrarObitoPage() {
       quantidade: 1,
       precoUnitario: s.preco,
     }));
+    const osId = `os-new-${Date.now()}`;
+    const pagamentoId = `pag-new-${Date.now()}`;
+    const numeroPag = nextPagamentoNumber([
+      ...pagamentosMock.map((p) => p.numero),
+      ...useDataStore.getState().pagamentosNovos.map((p) => p.numero),
+    ]);
+    const vencimento = new Date();
+    vencimento.setDate(vencimento.getDate() + 7);
+    const novoPagamento: Pagamento = {
+      id: pagamentoId,
+      numero: numeroPag,
+      origem: "ordem_servico",
+      ordemServicoId: osId,
+      tutorId: form.tutorId,
+      valorTotal: total,
+      status: "aberto",
+      parcelas: [
+        {
+          id: `par-${Date.now()}`,
+          numero: 1,
+          valor: total,
+          vencimento: vencimento.toISOString().slice(0, 10),
+          status: "pendente",
+        },
+      ],
+      criadoEm: agora,
+    };
     const nova: OrdemServico = {
-      id: `os-new-${Date.now()}`,
+      id: osId,
       numero,
       tutorId: form.tutorId,
       petId: form.petId,
@@ -144,6 +175,7 @@ function RegistrarObitoPage() {
       status: "aguardando_coleta",
       itens,
       total,
+      pagamentoId,
       dataFalecimento: form.dataFalecimento,
       observacoes: form.observacoes || undefined,
       historico: [
@@ -158,9 +190,10 @@ function RegistrarObitoPage() {
       atualizadoEm: agora,
     };
     addOS(nova);
-    toast.success(`Óbito registrado. ${numero} criada.`);
+    addPagamento(novoPagamento);
+    toast.success(`Óbito registrado. ${numero} criada e pagamento ${numeroPag} gerado.`);
     navigate({ to: "/ordens-servico" });
-    // TODO(api): substituir por createServerFn (criar OS + óbito + pagamento).
+    // TODO(api): substituir por createServerFn transacional (OS + óbito + pagamento).
   }
 
   return (
