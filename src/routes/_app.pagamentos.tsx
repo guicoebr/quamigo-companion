@@ -24,6 +24,7 @@ import {
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useMockData, findTutor } from "@/hooks/useMockData";
+import { useDataStore } from "@/store/dataStore";
 import { formatBRL, formatDate } from "@/lib/formatters";
 import { toast } from "sonner";
 import { Wallet, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -31,6 +32,7 @@ import type {
   StatusPagamento,
   StatusParcela,
   MetodoPagamento,
+  Pagamento,
 } from "@/types/pagamento";
 
 const STATUS_PAG_LABEL: Record<StatusPagamento, { label: string; tone: "warning" | "info" | "success" | "neutral" }> = {
@@ -189,6 +191,7 @@ function PagamentosPage() {
                           )}
                         </TableCell>
                         <TableCell className="font-medium">{p.numero}</TableCell>
+                        {/* link estilo "ver detalhe" via número clicável */}
                         <TableCell>
                           {tutor ? (
                             <Link
