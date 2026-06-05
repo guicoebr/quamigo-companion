@@ -1,5 +1,11 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, PawPrint } from "lucide-react";
+import { ArrowLeft, PawPrint, Receipt } from "lucide-react";
+import { toast } from "sonner";
+import { RoleGuard } from "@/components/auth/RoleGuard";
+import { useDataStore } from "@/store/dataStore";
+import { pagamentosMock } from "@/mocks/pagamentos";
+import { nextPagamentoNumber } from "@/lib/formatters";
+import type { Pagamento } from "@/types/pagamento";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,17 +71,66 @@ function ContratoDetalhe() {
   >[];
   const cobrancas = pagamentos.filter((p) => p.contratoId === c.id);
 
+  function handleGerarCobranca() {
+    const agora = new Date();
+    const yyyy = agora.getFullYear();
+    const mm = String(agora.getMonth() + 1).padStart(2, "0");
+    const jaExiste = cobrancas.some((p) => {
+      const d = new Date(p.criadoEm);
+      return d.getFullYear() === yyyy && d.getMonth() === agora.getMonth();
+    });
+    if (jaExiste) {
+      toast.error(`Já existe uma cobrança gerada para ${mm}/${yyyy}.`);
+      return;
+    }
+    const numero = nextPagamentoNumber([
+      ...pagamentosMock.map((p) => p.numero),
+      ...useDataStore.getState().pagamentosNovos.map((p) => p.numero),
+    ]);
+    const venc = new Date();
+    venc.setDate(venc.getDate() + 7);
+    const novo: Pagamento = {
+      id: `pag-new-${Date.now()}`,
+      numero,
+      origem: "contrato",
+      contratoId: c.id,
+      tutorId: c.tutorId,
+      valorTotal: c.valorMensal,
+      status: "aberto",
+      parcelas: [
+        {
+          id: `par-${Date.now()}`,
+          numero: 1,
+          valor: c.valorMensal,
+          vencimento: venc.toISOString().slice(0, 10),
+          status: "pendente",
+        },
+      ],
+      criadoEm: agora.toISOString(),
+    };
+    useDataStore.getState().addPagamento(novo);
+    toast.success(`Cobrança ${numero} gerada.`);
+    // TODO(api): substituir por createServerFn (gerarCobrancaContrato).
+  }
+
   return (
     <>
       <PageHeader
         title={`Contrato ${c.numero}`}
         description={`Tutor: ${tutor?.nome ?? "—"} • criado em ${formatDate(c.criadoEm)}`}
         actions={
-          <Button asChild variant="outline">
-            <Link to="/contratos">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/contratos">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+              </Link>
+            </Button>
+            <RoleGuard roles={["admin", "financeiro"]}>
+              <Button onClick={handleGerarCobranca} disabled={c.status !== "ativo"}>
+                <Receipt className="mr-2 h-4 w-4" /> Gerar cobrança do mês
+              </Button>
+            </RoleGuard>
+          </div>
         }
       />
 
@@ -163,7 +218,15 @@ function ContratoDetalhe() {
                   const meta = STATUS_PARC[par.status];
                   return (
                     <TableRow key={`${p.id}-${par.id}`}>
-                      <TableCell className="font-medium">{p.numero}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link
+                          to="/pagamentos/$id"
+                          params={{ id: p.id }}
+                          className="text-primary hover:underline"
+                        >
+                          {p.numero}
+                        </Link>
+                      </TableCell>
                       <TableCell>{formatDate(par.vencimento)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatBRL(par.valor)}</TableCell>
                       <TableCell>
