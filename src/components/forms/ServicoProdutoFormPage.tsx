@@ -1,0 +1,136 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
+import { ArrowLeft, Save } from "lucide-react";
+import { PageHeader } from "@/components/cards/PageHeader";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useDataStore } from "@/store/dataStore";
+import { findServicoProduto } from "@/hooks/useMockData";
+import type { ServicoProduto } from "@/types/lookup";
+
+const schema = z.object({
+  nome: z.string().min(2, "Nome obrigatório."),
+  tipo: z.enum(["servico", "produto"]),
+  descricao: z.string().optional().or(z.literal("")),
+  preco: z.coerce.number().min(0, "Preço obrigatório."),
+  ativo: z.boolean(),
+});
+type FormValues = z.infer<typeof schema>;
+
+export function ServicoProdutoFormPage({ mode }: { mode: "novo" | "editar" }) {
+  const navigate = useNavigate();
+  const params = useParams({ strict: false }) as { id?: string };
+  const existing = mode === "editar" && params.id ? findServicoProduto(params.id) : undefined;
+  if (mode === "editar" && !existing) throw notFound();
+
+  const addServicoProduto = useDataStore((s) => s.addServicoProduto);
+  const updateServicoProduto = useDataStore((s) => s.updateServicoProduto);
+
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: existing
+      ? { nome: existing.nome, tipo: existing.tipo, descricao: existing.descricao ?? "", preco: existing.preco, ativo: existing.ativo }
+      : { tipo: "servico", ativo: true, preco: 0, nome: "" },
+  });
+
+  function onSubmit(values: FormValues) {
+    if (mode === "editar" && existing) {
+      updateServicoProduto(existing.id, {
+        nome: values.nome,
+        tipo: values.tipo,
+        descricao: values.descricao || undefined,
+        preco: Number(values.preco),
+        ativo: values.ativo,
+      });
+      toast.success("Item atualizado.");
+      navigate({ to: "/servicos-produtos" });
+      return;
+    }
+    const novo: ServicoProduto = {
+      id: `sp-new-${Date.now()}`,
+      nome: values.nome,
+      tipo: values.tipo,
+      descricao: values.descricao || undefined,
+      preco: Number(values.preco),
+      ativo: values.ativo,
+    };
+    addServicoProduto(novo);
+    toast.success("Item criado.");
+    navigate({ to: "/servicos-produtos" });
+    // TODO(api): criar/atualizar via createServerFn.
+  }
+
+  return (
+    <>
+      <PageHeader
+        title={mode === "novo" ? "Novo item" : "Editar item"}
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/servicos-produtos">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+            </Link>
+          </Button>
+        }
+      />
+      <Card className="rounded-[12px]">
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Field label="Nome*" error={errors.nome?.message}>
+              <Input {...register("nome")} />
+            </Field>
+            <Field label="Tipo*" error={errors.tipo?.message}>
+              <Select defaultValue={watch("tipo")} onValueChange={(v) => setValue("tipo", v as "servico" | "produto")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="servico">Serviço</SelectItem>
+                  <SelectItem value="produto">Produto</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Preço (R$)*" error={errors.preco?.message}>
+              <Input type="number" step="0.01" {...register("preco")} />
+            </Field>
+            <Field label="Ativo" error={errors.ativo?.message}>
+              <div className="flex items-center gap-2 pt-2">
+                <Switch checked={watch("ativo")} onCheckedChange={(v) => setValue("ativo", v)} />
+                <span className="text-sm text-muted-foreground">{watch("ativo") ? "Ativo" : "Inativo"}</span>
+              </div>
+            </Field>
+            <div className="md:col-span-2">
+              <Field label="Descrição" error={errors.descricao?.message}>
+                <Textarea rows={3} {...register("descricao")} />
+              </Field>
+            </div>
+            <div className="md:col-span-2 flex justify-end">
+              <Button type="submit"><Save className="mr-2 h-4 w-4" /> Salvar</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      {children}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
