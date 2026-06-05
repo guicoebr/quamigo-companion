@@ -25,6 +25,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { brand } from "@/design/brand";
+import { canAccessRoute } from "@/lib/permissions";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 
 type NavItem = {
   title: string;
@@ -57,16 +59,20 @@ export function AppSidebar() {
   const currentPath = useRouterState({
     select: (router) => router.location.pathname,
   });
+  const { role } = useRoleGuard();
 
   const isActive = (url: string) =>
     url === "/dashboard" ? currentPath === url : currentPath.startsWith(url);
 
-  const renderGroup = (label: string, items: NavItem[]) => (
-    <SidebarGroup>
+  const renderGroup = (label: string, items: NavItem[]) => {
+    const visible = items.filter((item) => canAccessRoute(item.url, role));
+    if (visible.length === 0) return null;
+    return (
+      <SidebarGroup key={label}>
       {!collapsed && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => (
+          {visible.map((item) => (
             <SidebarMenuItem key={item.url}>
               <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                 <Link to={item.url} className="flex items-center gap-2">
@@ -79,7 +85,8 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  );
+    );
+  };
 
   return (
     <Sidebar collapsible="icon">
