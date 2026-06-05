@@ -144,11 +144,20 @@ function TutorDetalhe() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button asChild size="icon" variant="ghost">
-                        <Link to="/pets/$id" params={{ id: p.id }}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button asChild size="icon" variant="ghost" title="Ver">
+                          <Link to="/pets/$id" params={{ id: p.id }}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <RoleGuard permission="pet.editar">
+                          <Button asChild size="icon" variant="ghost" title="Editar">
+                            <Link to="/pets/$id/editar" params={{ id: p.id }}>
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </RoleGuard>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -50,6 +50,7 @@ type DataState = {
 
   // Pets
   addPet: (p: Pet) => void;
+  updatePet: (id: string, patch: Partial<Pet>) => void;
 
   // Serviços/Produtos
   addServicoProduto: (s: ServicoProduto) => void;
@@ -125,6 +126,14 @@ export const useDataStore = create<DataState>((set) => ({
     }),
 
   addPet: (p) => set((s) => ({ petsNovos: [p, ...s.petsNovos] })),
+  updatePet: (id, patch) =>
+    set((s) => {
+      const novo = s.petsNovos.find((x) => x.id === id);
+      if (novo) {
+        return { petsNovos: s.petsNovos.map((x) => (x.id === id ? { ...x, ...patch } : x)) };
+      }
+      return { petsOverrides: mergeOverride(s.petsOverrides, id, patch) };
+    }),
 
   addServicoProduto: (sp) => set((s) => ({ servicosProdutosNovos: [sp, ...s.servicosProdutosNovos] })),
   updateServicoProduto: (id, patch) =>
