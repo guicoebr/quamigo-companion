@@ -1,0 +1,137 @@
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { useState } from "react";
+import { LogIn, PawPrint } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuthStore, MOCK_LOGIN_HINTS } from "@/store/authStore";
+import { defaultRouteForRole } from "@/lib/permissions";
+import { brand } from "@/design/brand";
+
+type LoginSearch = { redirect?: string };
+
+export const Route = createFileRoute("/login")({
+  ssr: false,
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
+  beforeLoad: ({ search }) => {
+    if (typeof window === "undefined") return;
+    const user = useAuthStore.getState().user;
+    if (user) {
+      throw redirect({ to: search.redirect ?? defaultRouteForRole(user.role) });
+    }
+  },
+  head: () => ({ meta: [{ title: "Entrar — +QAmigo" }] }),
+  component: LoginPage,
+});
+
+function LoginPage() {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const login = useAuthStore((s) => s.login);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    const result = await login(email, password);
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    navigate({ to: search.redirect ?? defaultRouteForRole(result.user.role) });
+  }
+
+  function fillHint(h: { email: string; password: string }) {
+    setEmail(h.email);
+    setPassword(h.password);
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="mb-6 flex items-center justify-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <PawPrint className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-semibold leading-tight">{brand.name}</p>
+            <p className="text-xs text-muted-foreground">{brand.tagline}</p>
+          </div>
+        </div>
+
+        <Card className="rounded-[12px]">
+          <CardHeader>
+            <CardTitle>Entrar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              {error && (
+                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {error}
+                </p>
+              )}
+              <Button type="submit" className="w-full" disabled={loading}>
+                <LogIn className="mr-2 h-4 w-4" />
+                {loading ? "Entrando..." : "Entrar"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="mt-6 rounded-lg border border-dashed border-border bg-card p-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Usuários de teste (mock)
+          </p>
+          <ul className="space-y-1 text-sm">
+            {MOCK_LOGIN_HINTS.map((h) => (
+              <li key={h.email} className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{h.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    senha: {h.password} • role: {h.role}
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => fillHint(h)}>
+                  Usar
+                </Button>
+              </li>
+            ))}
+          </ul>
+          {/* TODO(api): remover credenciais hardcoded ao integrar auth real. */}
+        </div>
+      </div>
+    </div>
+  );
+}
