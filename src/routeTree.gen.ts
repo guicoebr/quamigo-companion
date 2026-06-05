@@ -33,6 +33,7 @@ import { Route as AppObitosNovoRouteImport } from './routes/_app.obitos.novo'
 import { Route as AppContratosNovoRouteImport } from './routes/_app.contratos.novo'
 import { Route as AppContratosIdRouteImport } from './routes/_app.contratos.$id'
 import { Route as AppConfiguracoesUsuariosRouteImport } from './routes/_app.configuracoes.usuarios'
+import { Route as AppConfiguracoesRacasRouteImport } from './routes/_app.configuracoes.racas'
 import { Route as AppConfiguracoesEspeciesRouteImport } from './routes/_app.configuracoes.especies'
 import { Route as AppTutoresIdEditarRouteImport } from './routes/_app.tutores.$id.editar'
 import { Route as AppServicosProdutosIdEditarRouteImport } from './routes/_app.servicos-produtos.$id.editar'
@@ -157,6 +158,11 @@ const AppConfiguracoesUsuariosRoute =
     path: '/usuarios',
     getParentRoute: () => AppConfiguracoesRoute,
   } as any)
+const AppConfiguracoesRacasRoute = AppConfiguracoesRacasRouteImport.update({
+  id: '/racas',
+  path: '/racas',
+  getParentRoute: () => AppConfiguracoesRoute,
+} as any)
 const AppConfiguracoesEspeciesRoute =
   AppConfiguracoesEspeciesRouteImport.update({
     id: '/especies',
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/servicos-produtos': typeof AppServicosProdutosRouteWithChildren
   '/tutores': typeof AppTutoresRouteWithChildren
   '/configuracoes/especies': typeof AppConfiguracoesEspeciesRoute
+  '/configuracoes/racas': typeof AppConfiguracoesRacasRoute
   '/configuracoes/usuarios': typeof AppConfiguracoesUsuariosRoute
   '/contratos/$id': typeof AppContratosIdRoute
   '/contratos/novo': typeof AppContratosNovoRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/servicos-produtos': typeof AppServicosProdutosRouteWithChildren
   '/tutores': typeof AppTutoresRouteWithChildren
   '/configuracoes/especies': typeof AppConfiguracoesEspeciesRoute
+  '/configuracoes/racas': typeof AppConfiguracoesRacasRoute
   '/configuracoes/usuarios': typeof AppConfiguracoesUsuariosRoute
   '/contratos/$id': typeof AppContratosIdRoute
   '/contratos/novo': typeof AppContratosNovoRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/_app/servicos-produtos': typeof AppServicosProdutosRouteWithChildren
   '/_app/tutores': typeof AppTutoresRouteWithChildren
   '/_app/configuracoes/especies': typeof AppConfiguracoesEspeciesRoute
+  '/_app/configuracoes/racas': typeof AppConfiguracoesRacasRoute
   '/_app/configuracoes/usuarios': typeof AppConfiguracoesUsuariosRoute
   '/_app/contratos/$id': typeof AppContratosIdRoute
   '/_app/contratos/novo': typeof AppContratosNovoRoute
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/servicos-produtos'
     | '/tutores'
     | '/configuracoes/especies'
+    | '/configuracoes/racas'
     | '/configuracoes/usuarios'
     | '/contratos/$id'
     | '/contratos/novo'
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/servicos-produtos'
     | '/tutores'
     | '/configuracoes/especies'
+    | '/configuracoes/racas'
     | '/configuracoes/usuarios'
     | '/contratos/$id'
     | '/contratos/novo'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/_app/servicos-produtos'
     | '/_app/tutores'
     | '/_app/configuracoes/especies'
+    | '/_app/configuracoes/racas'
     | '/_app/configuracoes/usuarios'
     | '/_app/contratos/$id'
     | '/_app/contratos/novo'
@@ -526,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesUsuariosRouteImport
       parentRoute: typeof AppConfiguracoesRoute
     }
+    '/_app/configuracoes/racas': {
+      id: '/_app/configuracoes/racas'
+      path: '/racas'
+      fullPath: '/configuracoes/racas'
+      preLoaderRoute: typeof AppConfiguracoesRacasRouteImport
+      parentRoute: typeof AppConfiguracoesRoute
+    }
     '/_app/configuracoes/especies': {
       id: '/_app/configuracoes/especies'
       path: '/especies'
@@ -552,11 +571,13 @@ declare module '@tanstack/react-router' {
 
 interface AppConfiguracoesRouteChildren {
   AppConfiguracoesEspeciesRoute: typeof AppConfiguracoesEspeciesRoute
+  AppConfiguracoesRacasRoute: typeof AppConfiguracoesRacasRoute
   AppConfiguracoesUsuariosRoute: typeof AppConfiguracoesUsuariosRoute
 }
 
 const AppConfiguracoesRouteChildren: AppConfiguracoesRouteChildren = {
   AppConfiguracoesEspeciesRoute: AppConfiguracoesEspeciesRoute,
+  AppConfiguracoesRacasRoute: AppConfiguracoesRacasRoute,
   AppConfiguracoesUsuariosRoute: AppConfiguracoesUsuariosRoute,
 }
 
