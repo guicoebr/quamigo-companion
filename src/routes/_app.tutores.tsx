@@ -59,7 +59,7 @@ function TutoresPage() {
         title="Tutores"
         description={`${filtrados.length} de ${tutores.length} tutor(es).`}
         actions={
-          <RoleGuard allowed={["admin", "operacional", "recepcao"]}>
+          <RoleGuard roles={["admin", "operacional", "recepcao"]}>
             <Button disabled title="Cadastro disponível em bloco futuro">
               <Plus className="mr-2 h-4 w-4" /> Novo tutor
             </Button>
