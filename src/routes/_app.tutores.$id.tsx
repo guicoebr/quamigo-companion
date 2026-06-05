@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Mail, Phone, MapPin, FileText, Eye } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, FileText, Eye, Pencil } from "lucide-react";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,11 +60,20 @@ function TutorDetalhe() {
         title={tutor.nome}
         description={`CPF ${formatCPF(tutor.cpf)} • cliente desde ${formatDate(tutor.criadoEm)}`}
         actions={
-          <Button asChild variant="outline">
-            <Link to="/tutores">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/tutores">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+              </Link>
+            </Button>
+            <RoleGuard permission="tutor.editar">
+              <Button asChild>
+                <Link to="/tutores/$id/editar" params={{ id: tutor.id }}>
+                  <Pencil className="mr-2 h-4 w-4" /> Editar
+                </Link>
+              </Button>
+            </RoleGuard>
+          </div>
         }
       />
 
