@@ -22,6 +22,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppContratosRouteImport } from './routes/_app.contratos'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppBrandBookRouteImport } from './routes/_app.brand-book'
+import { Route as AppTutoresNovoRouteImport } from './routes/_app.tutores.novo'
 import { Route as AppTutoresIdRouteImport } from './routes/_app.tutores.$id'
 import { Route as AppPetsIdRouteImport } from './routes/_app.pets.$id'
 import { Route as AppOrdensServicoIdRouteImport } from './routes/_app.ordens-servico.$id'
@@ -92,6 +93,11 @@ const AppBrandBookRoute = AppBrandBookRouteImport.update({
   path: '/brand-book',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTutoresNovoRoute = AppTutoresNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AppTutoresRoute,
+} as any)
 const AppTutoresIdRoute = AppTutoresIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pets/$id': typeof AppPetsIdRoute
   '/tutores/$id': typeof AppTutoresIdRoute
+  '/tutores/novo': typeof AppTutoresNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pets/$id': typeof AppPetsIdRoute
   '/tutores/$id': typeof AppTutoresIdRoute
+  '/tutores/novo': typeof AppTutoresNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/_app/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/_app/pets/$id': typeof AppPetsIdRoute
   '/_app/tutores/$id': typeof AppTutoresIdRoute
+  '/_app/tutores/novo': typeof AppTutoresNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/ordens-servico/$id'
     | '/pets/$id'
     | '/tutores/$id'
+    | '/tutores/novo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/ordens-servico/$id'
     | '/pets/$id'
     | '/tutores/$id'
+    | '/tutores/novo'
   id:
     | '__root__'
     | '/'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/_app/ordens-servico/$id'
     | '/_app/pets/$id'
     | '/_app/tutores/$id'
+    | '/_app/tutores/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -338,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBrandBookRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/tutores/novo': {
+      id: '/_app/tutores/novo'
+      path: '/novo'
+      fullPath: '/tutores/novo'
+      preLoaderRoute: typeof AppTutoresNovoRouteImport
+      parentRoute: typeof AppTutoresRoute
+    }
     '/_app/tutores/$id': {
       id: '/_app/tutores/$id'
       path: '/$id'
@@ -412,10 +431,12 @@ const AppPetsRouteWithChildren =
 
 interface AppTutoresRouteChildren {
   AppTutoresIdRoute: typeof AppTutoresIdRoute
+  AppTutoresNovoRoute: typeof AppTutoresNovoRoute
 }
 
 const AppTutoresRouteChildren: AppTutoresRouteChildren = {
   AppTutoresIdRoute: AppTutoresIdRoute,
+  AppTutoresNovoRoute: AppTutoresNovoRoute,
 }
 
 const AppTutoresRouteWithChildren = AppTutoresRoute._addFileChildren(
@@ -459,3 +480,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
