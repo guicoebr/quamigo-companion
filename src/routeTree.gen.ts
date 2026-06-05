@@ -24,6 +24,7 @@ import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoe
 import { Route as AppBrandBookRouteImport } from './routes/_app.brand-book'
 import { Route as AppTutoresNovoRouteImport } from './routes/_app.tutores.novo'
 import { Route as AppTutoresIdRouteImport } from './routes/_app.tutores.$id'
+import { Route as AppServicosProdutosNovoRouteImport } from './routes/_app.servicos-produtos.novo'
 import { Route as AppPetsNovoRouteImport } from './routes/_app.pets.novo'
 import { Route as AppPetsIdRouteImport } from './routes/_app.pets.$id'
 import { Route as AppOrdensServicoIdRouteImport } from './routes/_app.ordens-servico.$id'
@@ -105,6 +106,11 @@ const AppTutoresIdRoute = AppTutoresIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppTutoresRoute,
 } as any)
+const AppServicosProdutosNovoRoute = AppServicosProdutosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AppServicosProdutosRoute,
+} as any)
 const AppPetsNovoRoute = AppPetsNovoRouteImport.update({
   id: '/novo',
   path: '/novo',
@@ -147,13 +153,14 @@ export interface FileRoutesByFullPath {
   '/ordens-servico': typeof AppOrdensServicoRouteWithChildren
   '/pagamentos': typeof AppPagamentosRoute
   '/pets': typeof AppPetsRouteWithChildren
-  '/servicos-produtos': typeof AppServicosProdutosRoute
+  '/servicos-produtos': typeof AppServicosProdutosRouteWithChildren
   '/tutores': typeof AppTutoresRouteWithChildren
   '/contratos/$id': typeof AppContratosIdRoute
   '/obitos/novo': typeof AppObitosNovoRoute
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pets/$id': typeof AppPetsIdRoute
   '/pets/novo': typeof AppPetsNovoRoute
+  '/servicos-produtos/novo': typeof AppServicosProdutosNovoRoute
   '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
   '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -169,13 +176,14 @@ export interface FileRoutesByTo {
   '/ordens-servico': typeof AppOrdensServicoRouteWithChildren
   '/pagamentos': typeof AppPagamentosRoute
   '/pets': typeof AppPetsRouteWithChildren
-  '/servicos-produtos': typeof AppServicosProdutosRoute
+  '/servicos-produtos': typeof AppServicosProdutosRouteWithChildren
   '/tutores': typeof AppTutoresRouteWithChildren
   '/contratos/$id': typeof AppContratosIdRoute
   '/obitos/novo': typeof AppObitosNovoRoute
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pets/$id': typeof AppPetsIdRoute
   '/pets/novo': typeof AppPetsNovoRoute
+  '/servicos-produtos/novo': typeof AppServicosProdutosNovoRoute
   '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
   '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -193,13 +201,14 @@ export interface FileRoutesById {
   '/_app/ordens-servico': typeof AppOrdensServicoRouteWithChildren
   '/_app/pagamentos': typeof AppPagamentosRoute
   '/_app/pets': typeof AppPetsRouteWithChildren
-  '/_app/servicos-produtos': typeof AppServicosProdutosRoute
+  '/_app/servicos-produtos': typeof AppServicosProdutosRouteWithChildren
   '/_app/tutores': typeof AppTutoresRouteWithChildren
   '/_app/contratos/$id': typeof AppContratosIdRoute
   '/_app/obitos/novo': typeof AppObitosNovoRoute
   '/_app/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/_app/pets/$id': typeof AppPetsIdRoute
   '/_app/pets/novo': typeof AppPetsNovoRoute
+  '/_app/servicos-produtos/novo': typeof AppServicosProdutosNovoRoute
   '/_app/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/_app/tutores/novo': typeof AppTutoresNovoRoute
   '/_app/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -224,6 +233,7 @@ export interface FileRouteTypes {
     | '/ordens-servico/$id'
     | '/pets/$id'
     | '/pets/novo'
+    | '/servicos-produtos/novo'
     | '/tutores/$id'
     | '/tutores/novo'
     | '/tutores/$id/editar'
@@ -246,6 +256,7 @@ export interface FileRouteTypes {
     | '/ordens-servico/$id'
     | '/pets/$id'
     | '/pets/novo'
+    | '/servicos-produtos/novo'
     | '/tutores/$id'
     | '/tutores/novo'
     | '/tutores/$id/editar'
@@ -269,6 +280,7 @@ export interface FileRouteTypes {
     | '/_app/ordens-servico/$id'
     | '/_app/pets/$id'
     | '/_app/pets/novo'
+    | '/_app/servicos-produtos/novo'
     | '/_app/tutores/$id'
     | '/_app/tutores/novo'
     | '/_app/tutores/$id/editar'
@@ -388,6 +400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTutoresIdRouteImport
       parentRoute: typeof AppTutoresRoute
     }
+    '/_app/servicos-produtos/novo': {
+      id: '/_app/servicos-produtos/novo'
+      path: '/novo'
+      fullPath: '/servicos-produtos/novo'
+      preLoaderRoute: typeof AppServicosProdutosNovoRouteImport
+      parentRoute: typeof AppServicosProdutosRoute
+    }
     '/_app/pets/novo': {
       id: '/_app/pets/novo'
       path: '/novo'
@@ -469,6 +488,17 @@ const AppPetsRouteChildren: AppPetsRouteChildren = {
 const AppPetsRouteWithChildren =
   AppPetsRoute._addFileChildren(AppPetsRouteChildren)
 
+interface AppServicosProdutosRouteChildren {
+  AppServicosProdutosNovoRoute: typeof AppServicosProdutosNovoRoute
+}
+
+const AppServicosProdutosRouteChildren: AppServicosProdutosRouteChildren = {
+  AppServicosProdutosNovoRoute: AppServicosProdutosNovoRoute,
+}
+
+const AppServicosProdutosRouteWithChildren =
+  AppServicosProdutosRoute._addFileChildren(AppServicosProdutosRouteChildren)
+
 interface AppTutoresIdRouteChildren {
   AppTutoresIdEditarRoute: typeof AppTutoresIdEditarRoute
 }
@@ -503,7 +533,7 @@ interface AppRouteChildren {
   AppOrdensServicoRoute: typeof AppOrdensServicoRouteWithChildren
   AppPagamentosRoute: typeof AppPagamentosRoute
   AppPetsRoute: typeof AppPetsRouteWithChildren
-  AppServicosProdutosRoute: typeof AppServicosProdutosRoute
+  AppServicosProdutosRoute: typeof AppServicosProdutosRouteWithChildren
   AppTutoresRoute: typeof AppTutoresRouteWithChildren
   AppObitosNovoRoute: typeof AppObitosNovoRoute
 }
@@ -516,7 +546,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrdensServicoRoute: AppOrdensServicoRouteWithChildren,
   AppPagamentosRoute: AppPagamentosRoute,
   AppPetsRoute: AppPetsRouteWithChildren,
-  AppServicosProdutosRoute: AppServicosProdutosRoute,
+  AppServicosProdutosRoute: AppServicosProdutosRouteWithChildren,
   AppTutoresRoute: AppTutoresRouteWithChildren,
   AppObitosNovoRoute: AppObitosNovoRoute,
 }
@@ -532,3 +562,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
