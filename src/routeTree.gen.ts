@@ -24,6 +24,7 @@ import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoe
 import { Route as AppBrandBookRouteImport } from './routes/_app.brand-book'
 import { Route as AppTutoresNovoRouteImport } from './routes/_app.tutores.novo'
 import { Route as AppTutoresIdRouteImport } from './routes/_app.tutores.$id'
+import { Route as AppPetsNovoRouteImport } from './routes/_app.pets.novo'
 import { Route as AppPetsIdRouteImport } from './routes/_app.pets.$id'
 import { Route as AppOrdensServicoIdRouteImport } from './routes/_app.ordens-servico.$id'
 import { Route as AppObitosNovoRouteImport } from './routes/_app.obitos.novo'
@@ -104,6 +105,11 @@ const AppTutoresIdRoute = AppTutoresIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppTutoresRoute,
 } as any)
+const AppPetsNovoRoute = AppPetsNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AppPetsRoute,
+} as any)
 const AppPetsIdRoute = AppPetsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/obitos/novo': typeof AppObitosNovoRoute
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pets/$id': typeof AppPetsIdRoute
+  '/pets/novo': typeof AppPetsNovoRoute
   '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
   '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/obitos/novo': typeof AppObitosNovoRoute
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pets/$id': typeof AppPetsIdRoute
+  '/pets/novo': typeof AppPetsNovoRoute
   '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
   '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/_app/obitos/novo': typeof AppObitosNovoRoute
   '/_app/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/_app/pets/$id': typeof AppPetsIdRoute
+  '/_app/pets/novo': typeof AppPetsNovoRoute
   '/_app/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/_app/tutores/novo': typeof AppTutoresNovoRoute
   '/_app/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
     | '/obitos/novo'
     | '/ordens-servico/$id'
     | '/pets/$id'
+    | '/pets/novo'
     | '/tutores/$id'
     | '/tutores/novo'
     | '/tutores/$id/editar'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/obitos/novo'
     | '/ordens-servico/$id'
     | '/pets/$id'
+    | '/pets/novo'
     | '/tutores/$id'
     | '/tutores/novo'
     | '/tutores/$id/editar'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/_app/obitos/novo'
     | '/_app/ordens-servico/$id'
     | '/_app/pets/$id'
+    | '/_app/pets/novo'
     | '/_app/tutores/$id'
     | '/_app/tutores/novo'
     | '/_app/tutores/$id/editar'
@@ -376,6 +388,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTutoresIdRouteImport
       parentRoute: typeof AppTutoresRoute
     }
+    '/_app/pets/novo': {
+      id: '/_app/pets/novo'
+      path: '/novo'
+      fullPath: '/pets/novo'
+      preLoaderRoute: typeof AppPetsNovoRouteImport
+      parentRoute: typeof AppPetsRoute
+    }
     '/_app/pets/$id': {
       id: '/_app/pets/$id'
       path: '/$id'
@@ -439,10 +458,12 @@ const AppOrdensServicoRouteWithChildren =
 
 interface AppPetsRouteChildren {
   AppPetsIdRoute: typeof AppPetsIdRoute
+  AppPetsNovoRoute: typeof AppPetsNovoRoute
 }
 
 const AppPetsRouteChildren: AppPetsRouteChildren = {
   AppPetsIdRoute: AppPetsIdRoute,
+  AppPetsNovoRoute: AppPetsNovoRoute,
 }
 
 const AppPetsRouteWithChildren =
