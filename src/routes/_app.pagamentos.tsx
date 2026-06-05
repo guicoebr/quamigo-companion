@@ -249,21 +249,8 @@ function PagamentosPage() {
   );
 }
 
-function ParcelasTable({
-  parcelas,
-  pagamentoId,
-}: {
-  parcelas: Array<{
-    id: string;
-    numero: number;
-    valor: number;
-    vencimento: string;
-    status: StatusParcela;
-    pagaEm?: string;
-    metodo?: MetodoPagamento;
-  }>;
-  pagamentoId: string;
-}) {
+function ParcelasTable({ pagamento }: { pagamento: Pagamento }) {
+  const darBaixa = useDataStore((s) => s.darBaixaParcela);
   return (
     <div className="space-y-3">
       <p className="text-sm font-semibold">Parcelas</p>
@@ -280,7 +267,7 @@ function ParcelasTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {parcelas.map((par) => {
+          {pagamento.parcelas.map((par) => {
             const meta = STATUS_PARC_LABEL[par.status];
             return (
               <TableRow key={par.id}>
@@ -300,11 +287,10 @@ function ParcelasTable({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() =>
-                          toast.info(
-                            `Baixa da parcela ${par.numero} do ${pagamentoId} (mock — backend pendente).`,
-                          )
-                        }
+                        onClick={() => {
+                          darBaixa(pagamento.id, par.id, "pix", pagamento);
+                          toast.success(`Parcela ${par.numero} baixada (PIX).`);
+                        }}
                       >
                         Dar baixa
                       </Button>
