@@ -10,6 +10,7 @@ import {
   modalidadesMock,
   servicosProdutosMock,
 } from "@/mocks/lookups";
+import { useOSStore } from "@/store/osStore";
 
 /**
  * Hook centralizado para acessar os mocks no frontend.
@@ -18,10 +19,11 @@ import {
  * TanStack Query usando `queryOptions` por entidade.
  */
 export function useMockData() {
+  const novasOS = useOSStore((s) => s.novas);
   return {
     tutores: tutoresMock,
     pets: petsMock,
-    ordensServico: ordensServicoMock,
+    ordensServico: [...novasOS, ...ordensServicoMock],
     pagamentos: pagamentosMock,
     contratos: contratosMock,
     usuarios: usuariosMock,
@@ -58,5 +60,6 @@ export function petsDoTutor(tutorId: string) {
   return petsMock.filter((p) => p.tutorId === tutorId);
 }
 export function osDoTutor(tutorId: string) {
-  return ordensServicoMock.filter((os) => os.tutorId === tutorId);
+  const novas = useOSStore.getState().novas;
+  return [...novas, ...ordensServicoMock].filter((os) => os.tutorId === tutorId);
 }
