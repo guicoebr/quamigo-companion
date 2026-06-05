@@ -28,6 +28,7 @@ import { Route as AppPetsIdRouteImport } from './routes/_app.pets.$id'
 import { Route as AppOrdensServicoIdRouteImport } from './routes/_app.ordens-servico.$id'
 import { Route as AppObitosNovoRouteImport } from './routes/_app.obitos.novo'
 import { Route as AppContratosIdRouteImport } from './routes/_app.contratos.$id'
+import { Route as AppTutoresIdEditarRouteImport } from './routes/_app.tutores.$id.editar'
 
 const UnauthorizedRoute = UnauthorizedRouteImport.update({
   id: '/unauthorized',
@@ -123,6 +124,11 @@ const AppContratosIdRoute = AppContratosIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppContratosRoute,
 } as any)
+const AppTutoresIdEditarRoute = AppTutoresIdEditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => AppTutoresIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -141,8 +147,9 @@ export interface FileRoutesByFullPath {
   '/obitos/novo': typeof AppObitosNovoRoute
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pets/$id': typeof AppPetsIdRoute
-  '/tutores/$id': typeof AppTutoresIdRoute
+  '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
+  '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -161,8 +168,9 @@ export interface FileRoutesByTo {
   '/obitos/novo': typeof AppObitosNovoRoute
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pets/$id': typeof AppPetsIdRoute
-  '/tutores/$id': typeof AppTutoresIdRoute
+  '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
+  '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -183,8 +191,9 @@ export interface FileRoutesById {
   '/_app/obitos/novo': typeof AppObitosNovoRoute
   '/_app/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/_app/pets/$id': typeof AppPetsIdRoute
-  '/_app/tutores/$id': typeof AppTutoresIdRoute
+  '/_app/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/_app/tutores/novo': typeof AppTutoresNovoRoute
+  '/_app/tutores/$id/editar': typeof AppTutoresIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -207,6 +216,7 @@ export interface FileRouteTypes {
     | '/pets/$id'
     | '/tutores/$id'
     | '/tutores/novo'
+    | '/tutores/$id/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/pets/$id'
     | '/tutores/$id'
     | '/tutores/novo'
+    | '/tutores/$id/editar'
   id:
     | '__root__'
     | '/'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/_app/pets/$id'
     | '/_app/tutores/$id'
     | '/_app/tutores/novo'
+    | '/_app/tutores/$id/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -392,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppContratosIdRouteImport
       parentRoute: typeof AppContratosRoute
     }
+    '/_app/tutores/$id/editar': {
+      id: '/_app/tutores/$id/editar'
+      path: '/editar'
+      fullPath: '/tutores/$id/editar'
+      preLoaderRoute: typeof AppTutoresIdEditarRouteImport
+      parentRoute: typeof AppTutoresIdRoute
+    }
   }
 }
 
@@ -429,13 +448,25 @@ const AppPetsRouteChildren: AppPetsRouteChildren = {
 const AppPetsRouteWithChildren =
   AppPetsRoute._addFileChildren(AppPetsRouteChildren)
 
+interface AppTutoresIdRouteChildren {
+  AppTutoresIdEditarRoute: typeof AppTutoresIdEditarRoute
+}
+
+const AppTutoresIdRouteChildren: AppTutoresIdRouteChildren = {
+  AppTutoresIdEditarRoute: AppTutoresIdEditarRoute,
+}
+
+const AppTutoresIdRouteWithChildren = AppTutoresIdRoute._addFileChildren(
+  AppTutoresIdRouteChildren,
+)
+
 interface AppTutoresRouteChildren {
-  AppTutoresIdRoute: typeof AppTutoresIdRoute
+  AppTutoresIdRoute: typeof AppTutoresIdRouteWithChildren
   AppTutoresNovoRoute: typeof AppTutoresNovoRoute
 }
 
 const AppTutoresRouteChildren: AppTutoresRouteChildren = {
-  AppTutoresIdRoute: AppTutoresIdRoute,
+  AppTutoresIdRoute: AppTutoresIdRouteWithChildren,
   AppTutoresNovoRoute: AppTutoresNovoRoute,
 }
 
@@ -480,3 +511,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
