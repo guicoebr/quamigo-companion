@@ -42,7 +42,7 @@ function DashboardPage() {
       .map((par) => ({ pagamento: p, parcela: par })),
   );
   const totalPendente = parcelasPendentes.reduce((acc, x) => acc + x.parcela.valor, 0);
-  const parcelasAtrasadas = parcelasPendentes.filter((x) => x.parcela.parcela?.status === "atrasado" || x.parcela.status === "atrasado");
+  const parcelasAtrasadas = parcelasPendentes.filter((x) => x.parcela.status === "atrasado");
 
   // Distribuição por status
   const distribuicao = STATUS_OS_FLOW.map((status) => ({
