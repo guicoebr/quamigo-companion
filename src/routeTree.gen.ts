@@ -20,7 +20,6 @@ import { Route as AppPagamentosRouteImport } from './routes/_app.pagamentos'
 import { Route as AppOrdensServicoRouteImport } from './routes/_app.ordens-servico'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppContratosRouteImport } from './routes/_app.contratos'
-import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppBrandBookRouteImport } from './routes/_app.brand-book'
 import { Route as AppTutoresNovoRouteImport } from './routes/_app.tutores.novo'
 import { Route as AppTutoresIdRouteImport } from './routes/_app.tutores.$id'
@@ -87,11 +86,6 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 const AppContratosRoute = AppContratosRouteImport.update({
   id: '/contratos',
   path: '/contratos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppBrandBookRoute = AppBrandBookRouteImport.update({
@@ -166,7 +160,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/brand-book': typeof AppBrandBookRoute
-  '/configuracoes': typeof AppConfiguracoesRoute
   '/contratos': typeof AppContratosRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/ordens-servico': typeof AppOrdensServicoRouteWithChildren
@@ -192,7 +185,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/brand-book': typeof AppBrandBookRoute
-  '/configuracoes': typeof AppConfiguracoesRoute
   '/contratos': typeof AppContratosRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
   '/ordens-servico': typeof AppOrdensServicoRouteWithChildren
@@ -220,7 +212,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/_app/brand-book': typeof AppBrandBookRoute
-  '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/contratos': typeof AppContratosRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/ordens-servico': typeof AppOrdensServicoRouteWithChildren
@@ -248,7 +239,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/unauthorized'
     | '/brand-book'
-    | '/configuracoes'
     | '/contratos'
     | '/dashboard'
     | '/ordens-servico'
@@ -274,7 +264,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/unauthorized'
     | '/brand-book'
-    | '/configuracoes'
     | '/contratos'
     | '/dashboard'
     | '/ordens-servico'
@@ -301,7 +290,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/unauthorized'
     | '/_app/brand-book'
-    | '/_app/configuracoes'
     | '/_app/contratos'
     | '/_app/dashboard'
     | '/_app/ordens-servico'
@@ -407,13 +395,6 @@ declare module '@tanstack/react-router' {
       path: '/contratos'
       fullPath: '/contratos'
       preLoaderRoute: typeof AppContratosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/configuracoes': {
-      id: '/_app/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/brand-book': {
@@ -601,7 +582,6 @@ const AppTutoresRouteWithChildren = AppTutoresRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppBrandBookRoute: typeof AppBrandBookRoute
-  AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppContratosRoute: typeof AppContratosRouteWithChildren
   AppDashboardRoute: typeof AppDashboardRoute
   AppOrdensServicoRoute: typeof AppOrdensServicoRouteWithChildren
@@ -614,7 +594,6 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppBrandBookRoute: AppBrandBookRoute,
-  AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppContratosRoute: AppContratosRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
   AppOrdensServicoRoute: AppOrdensServicoRouteWithChildren,
@@ -636,3 +615,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
