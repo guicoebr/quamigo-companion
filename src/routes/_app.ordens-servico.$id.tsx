@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -56,7 +56,6 @@ function OSDetalhe() {
   const { osId } = Route.useLoaderData();
   const { ordensServico, pagamentos } = useMockData();
   const os = ordensServico.find((o) => o.id === osId);
-  const navigate = useNavigate();
   const applyStatusChange = useOSStore((s) => s.applyStatusChange);
   const user = useAuthStore((s) => s.user);
 
@@ -287,8 +286,6 @@ function OSDetalhe() {
               Você não tem permissão para alterar o status desta OS.
             </p>
           )}
-          {/* Suprime warning de navegação não usada. */}
-          <span hidden>{navigate.toString().slice(0, 0)}</span>
         </CardContent>
       </Card>
     </>
