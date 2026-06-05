@@ -67,8 +67,10 @@ function ContratosPage() {
         description={`${filtrados.length} de ${contratos.length} contrato(s).`}
         actions={
           <RoleGuard roles={["admin", "financeiro"]}>
-            <Button disabled title="Cadastro disponível em bloco futuro">
-              <Plus className="mr-2 h-4 w-4" /> Novo contrato
+            <Button asChild>
+              <Link to="/contratos/novo">
+                <Plus className="mr-2 h-4 w-4" /> Novo contrato
+              </Link>
             </Button>
           </RoleGuard>
         }
