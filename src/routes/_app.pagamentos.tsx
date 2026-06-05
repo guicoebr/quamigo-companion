@@ -190,8 +190,16 @@ function PagamentosPage() {
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           )}
                         </TableCell>
-                        <TableCell className="font-medium">{p.numero}</TableCell>
-                        {/* link estilo "ver detalhe" via número clicável */}
+                        <TableCell className="font-medium">
+                          <Link
+                            to="/pagamentos/$id"
+                            params={{ id: p.id }}
+                            className="text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {p.numero}
+                          </Link>
+                        </TableCell>
                         <TableCell>
                           {tutor ? (
                             <Link
@@ -217,7 +225,7 @@ function PagamentosPage() {
                       {expandido && (
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
                           <TableCell colSpan={8} className="p-4">
-                            <ParcelasTable parcelas={p.parcelas} pagamentoId={p.id} />
+                            <ParcelasTable pagamento={p} />
                           </TableCell>
                         </TableRow>
                       )}
