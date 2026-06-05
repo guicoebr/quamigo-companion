@@ -60,8 +60,10 @@ function PetsPage() {
         description={`${filtrados.length} de ${pets.length} pet(s).`}
         actions={
           <RoleGuard roles={["admin", "operacional", "recepcao"]}>
-            <Button disabled title="Cadastro disponível em bloco futuro">
-              <Plus className="mr-2 h-4 w-4" /> Novo pet
+            <Button asChild>
+              <Link to="/pets/novo">
+                <Plus className="mr-2 h-4 w-4" /> Novo pet
+              </Link>
             </Button>
           </RoleGuard>
         }

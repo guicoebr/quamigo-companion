@@ -24,6 +24,7 @@ import {
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useMockData, findTutor } from "@/hooks/useMockData";
+import { useDataStore } from "@/store/dataStore";
 import { formatBRL, formatDate } from "@/lib/formatters";
 import { toast } from "sonner";
 import { Wallet, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -31,6 +32,7 @@ import type {
   StatusPagamento,
   StatusParcela,
   MetodoPagamento,
+  Pagamento,
 } from "@/types/pagamento";
 
 const STATUS_PAG_LABEL: Record<StatusPagamento, { label: string; tone: "warning" | "info" | "success" | "neutral" }> = {
@@ -188,7 +190,16 @@ function PagamentosPage() {
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           )}
                         </TableCell>
-                        <TableCell className="font-medium">{p.numero}</TableCell>
+                        <TableCell className="font-medium">
+                          <Link
+                            to="/pagamentos/$id"
+                            params={{ id: p.id }}
+                            className="text-primary hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {p.numero}
+                          </Link>
+                        </TableCell>
                         <TableCell>
                           {tutor ? (
                             <Link
@@ -214,7 +225,7 @@ function PagamentosPage() {
                       {expandido && (
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
                           <TableCell colSpan={8} className="p-4">
-                            <ParcelasTable parcelas={p.parcelas} pagamentoId={p.id} />
+                            <ParcelasTable pagamento={p} />
                           </TableCell>
                         </TableRow>
                       )}
@@ -238,21 +249,8 @@ function PagamentosPage() {
   );
 }
 
-function ParcelasTable({
-  parcelas,
-  pagamentoId,
-}: {
-  parcelas: Array<{
-    id: string;
-    numero: number;
-    valor: number;
-    vencimento: string;
-    status: StatusParcela;
-    pagaEm?: string;
-    metodo?: MetodoPagamento;
-  }>;
-  pagamentoId: string;
-}) {
+function ParcelasTable({ pagamento }: { pagamento: Pagamento }) {
+  const darBaixa = useDataStore((s) => s.darBaixaParcela);
   return (
     <div className="space-y-3">
       <p className="text-sm font-semibold">Parcelas</p>
@@ -269,7 +267,7 @@ function ParcelasTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {parcelas.map((par) => {
+          {pagamento.parcelas.map((par) => {
             const meta = STATUS_PARC_LABEL[par.status];
             return (
               <TableRow key={par.id}>
@@ -289,11 +287,10 @@ function ParcelasTable({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() =>
-                          toast.info(
-                            `Baixa da parcela ${par.numero} do ${pagamentoId} (mock — backend pendente).`,
-                          )
-                        }
+                        onClick={() => {
+                          darBaixa(pagamento.id, par.id, "pix", pagamento);
+                          toast.success(`Parcela ${par.numero} baixada (PIX).`);
+                        }}
                       >
                         Dar baixa
                       </Button>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Search } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { Plus, Search, Pencil, Power } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import {
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useMockData } from "@/hooks/useMockData";
+import { useDataStore } from "@/store/dataStore";
 import { formatBRL } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/servicos-produtos")({
@@ -32,17 +34,23 @@ export const Route = createFileRoute("/_app/servicos-produtos")({
 
 function ServicosProdutosPage() {
   const { servicosProdutos } = useMockData();
+  const toggleAtivo = useDataStore((s) => s.toggleAtivoServicoProduto);
   const [busca, setBusca] = useState("");
   const [tipo, setTipo] = useState<string>("todos");
+  const [statusFiltro, setStatusFiltro] = useState<string>("todos");
 
   const filtrados = useMemo(() => {
     const t = busca.trim().toLowerCase();
     return servicosProdutos.filter((s) => {
       const matchTexto = !t || s.nome.toLowerCase().includes(t);
       const matchTipo = tipo === "todos" || s.tipo === tipo;
-      return matchTexto && matchTipo;
+      const matchStatus =
+        statusFiltro === "todos" ||
+        (statusFiltro === "ativo" && s.ativo) ||
+        (statusFiltro === "inativo" && !s.ativo);
+      return matchTexto && matchTipo && matchStatus;
     });
-  }, [servicosProdutos, busca, tipo]);
+  }, [servicosProdutos, busca, tipo, statusFiltro]);
 
   return (
     <>
@@ -51,8 +59,10 @@ function ServicosProdutosPage() {
         description={`${filtrados.length} de ${servicosProdutos.length} item(ns) no catálogo.`}
         actions={
           <RoleGuard permission="servico.gerenciar">
-            <Button disabled title="Cadastro disponível em bloco futuro">
-              <Plus className="mr-2 h-4 w-4" /> Novo item
+            <Button asChild>
+              <Link to="/servicos-produtos/novo">
+                <Plus className="mr-2 h-4 w-4" /> Novo item
+              </Link>
             </Button>
           </RoleGuard>
         }
@@ -80,6 +90,14 @@ function ServicosProdutosPage() {
                 <SelectItem value="produto">Produtos</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+              <SelectTrigger className="sm:w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="ativo">Ativos</SelectItem>
+                <SelectItem value="inativo">Inativos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="overflow-x-auto">
@@ -90,6 +108,7 @@ function ServicosProdutosPage() {
                   <TableHead>Tipo</TableHead>
                   <TableHead className="text-right">Preço</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-28"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -104,11 +123,33 @@ function ServicosProdutosPage() {
                         tone={s.ativo ? "success" : "neutral"}
                       />
                     </TableCell>
+                    <TableCell>
+                      <RoleGuard permission="servico.gerenciar">
+                        <div className="flex justify-end gap-1">
+                          <Button asChild size="icon" variant="ghost" aria-label="Editar">
+                            <Link to="/servicos-produtos/$id/editar" params={{ id: s.id }}>
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={s.ativo ? "Inativar" : "Reativar"}
+                            onClick={() => {
+                              toggleAtivo(s.id, s.ativo);
+                              toast.success(s.ativo ? "Item inativado." : "Item reativado.");
+                            }}
+                          >
+                            <Power className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </RoleGuard>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {filtrados.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
                       Nenhum item encontrado.
                     </TableCell>
                   </TableRow>
