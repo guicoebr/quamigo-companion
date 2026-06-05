@@ -27,13 +27,10 @@ const schema = z.object({
   racaId: z.string().optional().or(z.literal("")),
   sexo: z.enum(["macho", "femea"]),
   cor: z.string().optional().or(z.literal("")),
-  pesoKg: z
-    .union([z.string(), z.number()])
-    .optional()
-    .transform((v) => (v === "" || v === undefined ? undefined : Number(v)))
-    .refine((v) => v === undefined || (!Number.isNaN(v) && v > 0), {
-      message: "Peso deve ser número positivo.",
-    }),
+  pesoKg: z.coerce
+    .number({ invalid_type_error: "Peso inválido." })
+    .positive("Peso deve ser número positivo.")
+    .optional(),
   dataNascimento: z.string().optional().or(z.literal("")),
   dataFalecimento: z.string().optional().or(z.literal("")),
 });
