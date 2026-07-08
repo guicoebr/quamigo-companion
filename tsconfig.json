@@ -13,6 +13,16 @@
     "verbatimModuleSyntax": false,
     "noEmit": true,
 
+    /* TypeORM decorators (entities always declare an explicit column `type` —
+       esbuild strips decorators but can't emit design:type metadata, so we
+       don't rely on emitDecoratorMetadata for column type inference).
+       strictPropertyInitialization is off because TypeORM entity columns are
+       populated by the ORM, not a constructor — entities are the only classes
+       in this codebase, so this doesn't loosen checking anywhere else. */
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "strictPropertyInitialization": false,
+
     /* Linting */
     "skipLibCheck": true,
     "strict": true,

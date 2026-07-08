@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: qamigo
+      POSTGRES_PASSWORD: qamigo
+      POSTGRES_DB: qamigo
+    ports:
+      - "5432:5432"
+    volumes:
+      - qamigo_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qamigo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Réplica local do processo que roda no Railway. Em dev do dia a dia use
+  # `bun run dev` (hot reload) contra o `db` acima — este serviço serve para
+  # testar o build de produção antes de subir pro Railway.
+  #
+  # O build de produção precisou de 2 correções por causa de bugs do
+  # toolchain nitro/TanStack Start (não são bugs do app em si):
+  #   1. `bun run build` roda com NODE_ENV=production explícito (ver
+  #      package.json) — sem isso o SSR usa o JSX de desenvolvimento e
+  #      quebra toda página.
+  #   2. src/server/scripts/patch-dist.mjs corrige, após o build, um import
+  #      interno do TypeORM que o bundler do nitro emite quebrado
+  #      (`__require` de "typeorm/index.js" — não é uma exportação real do
+  #      pacote). Já roda automaticamente como parte de `bun run build`.
+  # Validado rodando o container de verdade (build + run + login real
+  # contra o Postgres) — não é só "compilou sem erro".
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://qamigo:qamigo@db:5432/qamigo
+      SESSION_SECRET: ${SESSION_SECRET:?defina SESSION_SECRET no seu .env}
+      PDF_STORAGE_DIR: /app/storage/pdfs
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - qamigo_pdf_storage:/app/storage/pdfs
+
+volumes:
+  qamigo_db_data:
+  qamigo_pdf_storage:

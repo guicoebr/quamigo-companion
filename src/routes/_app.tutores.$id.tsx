@@ -1,4 +1,5 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, Link, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Mail, Phone, MapPin, FileText, Eye, Pencil } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -13,13 +14,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status/StatusBadge";
-import {
-  findTutor,
-  petsDoTutor,
-  osDoTutor,
-  findEspecie,
-  findRaca,
-} from "@/hooks/useMockData";
+import { getTutor } from "@/lib/api/tutores.functions";
+import { listPets } from "@/lib/api/pets.functions";
+import { osDoTutor, findEspecie, findRaca } from "@/hooks/useMockData";
 import { STATUS_OS_META } from "@/lib/osStatus";
 import {
   formatBRL,
@@ -31,8 +28,8 @@ import {
 
 export const Route = createFileRoute("/_app/tutores/$id")({
   head: ({ params }) => ({ meta: [{ title: `Tutor ${params.id} — +QAmigo` }] }),
-  loader: ({ params }) => {
-    const tutor = findTutor(params.id);
+  loader: async ({ params }) => {
+    const tutor = await getTutor({ data: { id: params.id } });
     if (!tutor) throw notFound();
     return { tutor };
   },
@@ -49,9 +46,12 @@ export const Route = createFileRoute("/_app/tutores/$id")({
   component: TutorDetalhe,
 });
 
+const routeApi = getRouteApi("/_app/tutores/$id");
+
 function TutorDetalhe() {
-  const { tutor } = Route.useLoaderData();
-  const pets = petsDoTutor(tutor.id);
+  const { tutor } = routeApi.useLoaderData();
+  const { data: todosPets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const pets = todosPets.filter((p) => p.tutorId === tutor.id);
   const oss = osDoTutor(tutor.id);
 
   return (

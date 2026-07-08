@@ -7,16 +7,21 @@ import { canAccessRoute } from "@/lib/permissions";
  * Layout pathless `_app` — envolve todas as rotas internas no AppShell.
  *
  * Guards:
- *  - exige sessão (usuário no authStore persistido em localStorage);
+ *  - exige sessão (cookie httpOnly validado via server function `me()`);
  *  - sem sessão → redireciona para /login preservando a URL alvo;
  *  - sem permissão para a rota corrente → /unauthorized.
+ *    (isso é só UX — a autorização de verdade é reforçada em cada server function
+ *    via requireAuth()/requirePermission(), ver src/server/session.server.ts)
  *
- * `ssr: false` evita ler localStorage no servidor (a sessão mock é client-only).
+ * `ssr: false` evita tentar validar sessão durante SSR; a hidratação acontece no
+ * client via `hydrate()` antes de decidir o redirect.
  */
 export const Route = createFileRoute("/_app")({
   ssr: false,
-  beforeLoad: ({ location }) => {
+  beforeLoad: async ({ location }) => {
     if (typeof window === "undefined") return;
+    const store = useAuthStore.getState();
+    if (!store.hydrated) await store.hydrate();
     const user = useAuthStore.getState().user;
     if (!user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });

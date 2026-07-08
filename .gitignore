@@ -20,6 +20,14 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# PDFs de autorização gerados localmente (storage local por enquanto)
+/storage/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

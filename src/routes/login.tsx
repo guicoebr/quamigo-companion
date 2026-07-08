@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuthStore, MOCK_LOGIN_HINTS } from "@/store/authStore";
+import { useAuthStore } from "@/store/authStore";
 import { defaultRouteForRole } from "@/lib/permissions";
 import { brand } from "@/design/brand";
 
@@ -16,8 +16,10 @@ export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): LoginSearch => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
-  beforeLoad: ({ search }) => {
+  beforeLoad: async ({ search }) => {
     if (typeof window === "undefined") return;
+    const store = useAuthStore.getState();
+    if (!store.hydrated) await store.hydrate();
     const user = useAuthStore.getState().user;
     if (user) {
       throw redirect({ to: search.redirect ?? defaultRouteForRole(user.role) });
@@ -48,11 +50,6 @@ function LoginPage() {
       return;
     }
     navigate({ to: search.redirect ?? defaultRouteForRole(result.user.role) });
-  }
-
-  function fillHint(h: { email: string; password: string }) {
-    setEmail(h.email);
-    setPassword(h.password);
   }
 
   return (
@@ -109,28 +106,6 @@ function LoginPage() {
             </form>
           </CardContent>
         </Card>
-
-        <div className="mt-6 rounded-lg border border-dashed border-border bg-card p-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Usuários de teste (mock)
-          </p>
-          <ul className="space-y-1 text-sm">
-            {MOCK_LOGIN_HINTS.map((h) => (
-              <li key={h.email} className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{h.email}</p>
-                  <p className="text-xs text-muted-foreground">
-                    senha: {h.password} • role: {h.role}
-                  </p>
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => fillHint(h)}>
-                  Usar
-                </Button>
-              </li>
-            ))}
-          </ul>
-          {/* TODO(api): remover credenciais hardcoded ao integrar auth real. */}
-        </div>
       </div>
     </div>
   );

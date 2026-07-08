@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,9 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useDataStore } from "@/store/dataStore";
-import { useMockData } from "@/hooks/useMockData";
-import type { Pet } from "@/types/pet";
+import { createPet } from "@/lib/api/pets.functions";
+import { listTutores } from "@/lib/api/tutores.functions";
+import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
@@ -43,8 +44,9 @@ export const Route = createFileRoute("/_app/pets/novo")({
 
 function NovoPetPage() {
   const navigate = useNavigate();
-  const { tutores, especies, racas } = useMockData();
-  const addPet = useDataStore((s) => s.addPet);
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { data: especies = [] } = useQuery({ queryKey: ["especies"], queryFn: () => listEspecies() });
+  const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
   const [buscaTutor, setBuscaTutor] = useState("");
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
@@ -66,24 +68,26 @@ function NovoPetPage() {
     );
   }, [tutores, buscaTutor]);
 
-  function onSubmit(values: FormValues) {
-    const novo: Pet = {
-      id: `pet-new-${Date.now()}`,
-      tutorId: values.tutorId,
-      nome: values.nome,
-      especieId: values.especieId,
-      racaId: values.racaId,
-      sexo: values.sexo,
-      cor: values.cor,
-      pesoKg: Number(values.pesoKg),
-      dataNascimento: values.dataNascimento || undefined,
-      observacoes: values.observacoes || undefined,
-      criadoEm: new Date().toISOString(),
-    };
-    addPet(novo);
-    toast.success("Pet cadastrado.");
-    navigate({ to: "/pets/$id", params: { id: novo.id } });
-    // TODO(api): substituir por createServerFn (createPet).
+  async function onSubmit(values: FormValues) {
+    try {
+      const novo = await createPet({
+        data: {
+          tutorId: values.tutorId,
+          nome: values.nome,
+          especieId: values.especieId,
+          racaId: values.racaId,
+          sexo: values.sexo,
+          cor: values.cor,
+          pesoKg: Number(values.pesoKg),
+          dataNascimento: values.dataNascimento || undefined,
+          observacoes: values.observacoes || undefined,
+        },
+      });
+      toast.success("Pet cadastrado.");
+      navigate({ to: "/pets/$id", params: { id: novo.id } });
+    } catch {
+      toast.error("Não foi possível cadastrar o pet.");
+    }
   }
 
   return (

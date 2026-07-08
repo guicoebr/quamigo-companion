@@ -20,8 +20,8 @@ export function Topbar() {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate({ to: "/login", replace: true });
   }
 

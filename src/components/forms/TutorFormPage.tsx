@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Save } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -10,9 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { useDataStore } from "@/store/dataStore";
-import { findTutor } from "@/hooks/useMockData";
-import type { Tutor } from "@/types/tutor";
+import { getTutor, createTutor, updateTutor } from "@/lib/api/tutores.functions";
 
 const schema = z.object({
   nome: z.string().min(2, "Nome obrigatório."),
@@ -43,15 +42,16 @@ type FormValues = z.infer<typeof schema>;
 export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
   const navigate = useNavigate();
   const params = useParams({ strict: false }) as { id?: string };
-  const existing = mode === "editar" && params.id ? findTutor(params.id) : undefined;
-  if (mode === "editar" && !existing) throw notFound();
-
-  const addTutor = useDataStore((s) => s.addTutor);
-  const updateTutor = useDataStore((s) => s.updateTutor);
+  const { data: existing, isLoading } = useQuery({
+    queryKey: ["tutor", params.id],
+    queryFn: () => getTutor({ data: { id: params.id! } }),
+    enabled: mode === "editar" && !!params.id,
+  });
+  if (mode === "editar" && !isLoading && !existing) throw notFound();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: existing
+    values: existing
       ? {
           nome: existing.nome,
           cpf: existing.cpf,
@@ -68,10 +68,11 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
           uf: existing.endereco.uf,
           observacoes: existing.observacoes ?? "",
         }
-      : { contato1: "", nome: "" },
+      : undefined,
+    defaultValues: { contato1: "", nome: "" },
   });
 
-  function onSubmit(values: FormValues) {
+  async function onSubmit(values: FormValues) {
     const endereco = {
       cep: (values.cep ?? "").replace(/\D/g, ""),
       logradouro: values.logradouro ?? "",
@@ -80,33 +81,27 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
       cidade: values.cidade ?? "",
       uf: (values.uf ?? "").toUpperCase(),
     };
-    if (mode === "editar" && existing) {
-      updateTutor(existing.id, {
-        nome: values.nome,
-        cpf: values.cpf ?? "",
-        email: values.email ?? "",
-        telefone: values.contato1,
-        endereco,
-        observacoes: values.observacoes || undefined,
-      });
-      toast.success("Tutor atualizado.");
-      navigate({ to: "/tutores/$id", params: { id: existing.id } });
-      return;
-    }
-    const novo: Tutor = {
-      id: `tut-new-${Date.now()}`,
+    const payload = {
       nome: values.nome,
       cpf: values.cpf ?? "",
       email: values.email ?? "",
       telefone: values.contato1,
       endereco,
       observacoes: values.observacoes || undefined,
-      criadoEm: new Date().toISOString(),
     };
-    addTutor(novo);
-    toast.success("Tutor criado.");
-    navigate({ to: "/tutores/$id", params: { id: novo.id } });
-    // TODO(api): substituir por createServerFn (createTutor / updateTutor).
+    try {
+      if (mode === "editar" && existing) {
+        await updateTutor({ data: { id: existing.id, patch: payload } });
+        toast.success("Tutor atualizado.");
+        navigate({ to: "/tutores/$id", params: { id: existing.id } });
+      } else {
+        const novo = await createTutor({ data: payload });
+        toast.success("Tutor criado.");
+        navigate({ to: "/tutores/$id", params: { id: novo.id } });
+      }
+    } catch {
+      toast.error("Não foi possível salvar o tutor.");
+    }
   }
 
   return (

@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Save } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -18,9 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useDataStore } from "@/store/dataStore";
-import { findServicoProduto } from "@/hooks/useMockData";
-import type { ServicoProduto } from "@/types/lookup";
+import {
+  listServicosProdutos,
+  createServicoProduto,
+  updateServicoProduto,
+} from "@/lib/api/servicos-produtos.functions";
 
 const schema = z.object({
   nome: z.string().min(2, "Nome obrigatório."),
@@ -34,44 +37,43 @@ type FormValues = z.infer<typeof schema>;
 export function ServicoProdutoFormPage({ mode }: { mode: "novo" | "editar" }) {
   const navigate = useNavigate();
   const params = useParams({ strict: false }) as { id?: string };
-  const existing = mode === "editar" && params.id ? findServicoProduto(params.id) : undefined;
-  if (mode === "editar" && !existing) throw notFound();
-
-  const addServicoProduto = useDataStore((s) => s.addServicoProduto);
-  const updateServicoProduto = useDataStore((s) => s.updateServicoProduto);
+  const { data: servicosProdutos, isLoading } = useQuery({
+    queryKey: ["servicos-produtos"],
+    queryFn: () => listServicosProdutos(),
+    enabled: mode === "editar",
+  });
+  const existing =
+    mode === "editar" && params.id ? servicosProdutos?.find((s) => s.id === params.id) : undefined;
+  if (mode === "editar" && !isLoading && !existing) throw notFound();
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: existing
+    values: existing
       ? { nome: existing.nome, tipo: existing.tipo, descricao: existing.descricao ?? "", preco: existing.preco, ativo: existing.ativo }
-      : { tipo: "servico", ativo: true, preco: 0, nome: "" },
+      : undefined,
+    defaultValues: { tipo: "servico", ativo: true, preco: 0, nome: "" },
   });
 
-  function onSubmit(values: FormValues) {
-    if (mode === "editar" && existing) {
-      updateServicoProduto(existing.id, {
-        nome: values.nome,
-        tipo: values.tipo,
-        descricao: values.descricao || undefined,
-        preco: Number(values.preco),
-        ativo: values.ativo,
-      });
-      toast.success("Item atualizado.");
-      navigate({ to: "/servicos-produtos" });
-      return;
-    }
-    const novo: ServicoProduto = {
-      id: `sp-new-${Date.now()}`,
+  async function onSubmit(values: FormValues) {
+    const payload = {
       nome: values.nome,
       tipo: values.tipo,
       descricao: values.descricao || undefined,
       preco: Number(values.preco),
       ativo: values.ativo,
     };
-    addServicoProduto(novo);
-    toast.success("Item criado.");
-    navigate({ to: "/servicos-produtos" });
-    // TODO(api): criar/atualizar via createServerFn.
+    try {
+      if (mode === "editar" && existing) {
+        await updateServicoProduto({ data: { id: existing.id, patch: payload } });
+        toast.success("Item atualizado.");
+      } else {
+        await createServicoProduto({ data: payload });
+        toast.success("Item criado.");
+      }
+      navigate({ to: "/servicos-produtos" });
+    } catch {
+      toast.error("Não foi possível salvar o item.");
+    }
   }
 
   return (

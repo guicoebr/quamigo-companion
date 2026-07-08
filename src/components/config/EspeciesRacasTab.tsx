@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Power } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,8 +20,14 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { useMockData, findEspecie } from "@/hooks/useMockData";
-import { useDataStore } from "@/store/dataStore";
+import {
+  listEspecies,
+  createEspecie,
+  updateEspecie as updateEspecieFn,
+  listRacas,
+  createRaca,
+  updateRaca as updateRacaFn,
+} from "@/lib/api/lookups.functions";
 import type { Especie, Raca } from "@/types/lookup";
 
 const especieSchema = z.object({ nome: z.string().min(2, "Nome obrigatório.") });
@@ -30,7 +37,8 @@ const racaSchema = z.object({
 });
 
 export function EspeciesRacasTab() {
-  const { especies, racas } = useMockData();
+  const { data: especies = [] } = useQuery({ queryKey: ["especies"], queryFn: () => listEspecies() });
+  const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <EspeciesCard especies={especies} />
@@ -40,8 +48,18 @@ export function EspeciesRacasTab() {
 }
 
 function EspeciesCard({ especies }: { especies: Especie[] }) {
-  const addEspecie = useDataStore((s) => s.addEspecie);
-  const updateEspecie = useDataStore((s) => s.updateEspecie);
+  const queryClient = useQueryClient();
+  const salvar = useMutation({
+    mutationFn: (v: { nome: string; editandoId?: string }) =>
+      v.editandoId
+        ? updateEspecieFn({ data: { id: v.editandoId, patch: { nome: v.nome } } })
+        : createEspecie({ data: { nome: v.nome } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["especies"] }),
+  });
+  const toggleAtivo = useMutation({
+    mutationFn: (e: Especie) => updateEspecieFn({ data: { id: e.id, patch: { ativo: !e.ativo } } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["especies"] }),
+  });
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState<Especie | null>(null);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<{ nome: string }>({
@@ -49,13 +67,13 @@ function EspeciesCard({ especies }: { especies: Especie[] }) {
   });
 
   function onSubmit(v: { nome: string }) {
-    if (editando) {
-      updateEspecie(editando.id, { nome: v.nome });
-      toast.success("Espécie atualizada.");
-    } else {
-      addEspecie({ id: `esp-new-${Date.now()}`, nome: v.nome, ativo: true });
-      toast.success("Espécie criada.");
-    }
+    salvar.mutate(
+      { nome: v.nome, editandoId: editando?.id },
+      {
+        onSuccess: () => toast.success(editando ? "Espécie atualizada." : "Espécie criada."),
+        onError: () => toast.error("Não foi possível salvar a espécie."),
+      },
+    );
     setAberto(false);
     reset({ nome: "" });
   }
@@ -90,7 +108,7 @@ function EspeciesCard({ especies }: { especies: Especie[] }) {
                       <Button size="icon" variant="ghost" onClick={() => { setEditando(e); reset({ nome: e.nome }); setAberto(true); }}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => { updateEspecie(e.id, { ativo: !e.ativo }); toast.success(e.ativo ? "Inativada." : "Reativada."); }}>
+                      <Button size="icon" variant="ghost" onClick={() => toggleAtivo.mutate(e, { onSuccess: () => toast.success(e.ativo ? "Inativada." : "Reativada.") })}>
                         <Power className="h-4 w-4" />
                       </Button>
                     </div>
@@ -122,8 +140,18 @@ function EspeciesCard({ especies }: { especies: Especie[] }) {
 }
 
 function RacasCard({ racas, especies }: { racas: Raca[]; especies: Especie[] }) {
-  const addRaca = useDataStore((s) => s.addRaca);
-  const updateRaca = useDataStore((s) => s.updateRaca);
+  const queryClient = useQueryClient();
+  const salvar = useMutation({
+    mutationFn: (v: { nome: string; especieId: string; editandoId?: string }) =>
+      v.editandoId
+        ? updateRacaFn({ data: { id: v.editandoId, patch: { nome: v.nome, especieId: v.especieId } } })
+        : createRaca({ data: { nome: v.nome, especieId: v.especieId } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["racas"] }),
+  });
+  const toggleAtivo = useMutation({
+    mutationFn: (r: Raca) => updateRacaFn({ data: { id: r.id, patch: { ativo: !r.ativo } } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["racas"] }),
+  });
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState<Raca | null>(null);
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<{ nome: string; especieId: string }>({
@@ -131,13 +159,13 @@ function RacasCard({ racas, especies }: { racas: Raca[]; especies: Especie[] }) 
   });
 
   function onSubmit(v: { nome: string; especieId: string }) {
-    if (editando) {
-      updateRaca(editando.id, { nome: v.nome, especieId: v.especieId });
-      toast.success("Raça atualizada.");
-    } else {
-      addRaca({ id: `raca-new-${Date.now()}`, nome: v.nome, especieId: v.especieId, ativo: true });
-      toast.success("Raça criada.");
-    }
+    salvar.mutate(
+      { nome: v.nome, especieId: v.especieId, editandoId: editando?.id },
+      {
+        onSuccess: () => toast.success(editando ? "Raça atualizada." : "Raça criada."),
+        onError: () => toast.error("Não foi possível salvar a raça."),
+      },
+    );
     setAberto(false);
   }
 
@@ -165,7 +193,7 @@ function RacasCard({ racas, especies }: { racas: Raca[]; especies: Especie[] }) 
             {racas.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="font-medium">{r.nome}</TableCell>
-                <TableCell className="text-muted-foreground">{findEspecie(r.especieId)?.nome ?? "—"}</TableCell>
+                <TableCell className="text-muted-foreground">{especies.find((e) => e.id === r.especieId)?.nome ?? "—"}</TableCell>
                 <TableCell><StatusBadge label={r.ativo ? "Ativa" : "Inativa"} tone={r.ativo ? "success" : "neutral"} /></TableCell>
                 <TableCell>
                   <RoleGuard permission="config.gerenciar">
@@ -173,7 +201,7 @@ function RacasCard({ racas, especies }: { racas: Raca[]; especies: Especie[] }) 
                       <Button size="icon" variant="ghost" onClick={() => { setEditando(r); reset({ nome: r.nome, especieId: r.especieId }); setAberto(true); }}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => { updateRaca(r.id, { ativo: !r.ativo }); toast.success(r.ativo ? "Inativada." : "Reativada."); }}>
+                      <Button size="icon" variant="ghost" onClick={() => toggleAtivo.mutate(r, { onSuccess: () => toast.success(r.ativo ? "Inativada." : "Reativada.") })}>
                         <Power className="h-4 w-4" />
                       </Button>
                     </div>

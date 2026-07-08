@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, Weight, PawPrint, Pencil } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -13,20 +14,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status/StatusBadge";
-import {
-  findPet,
-  findTutor,
-  findEspecie,
-  findRaca,
-  useMockData,
-} from "@/hooks/useMockData";
+import { getPet } from "@/lib/api/pets.functions";
+import { getTutor } from "@/lib/api/tutores.functions";
+import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
+import { useMockData } from "@/hooks/useMockData";
 import { STATUS_OS_META } from "@/lib/osStatus";
 import { formatBRL, formatDate } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/pets/$id")({
   head: ({ params }) => ({ meta: [{ title: `Pet ${params.id} — +QAmigo` }] }),
-  loader: ({ params }) => {
-    const pet = findPet(params.id);
+  loader: async ({ params }) => {
+    const pet = await getPet({ data: { id: params.id } });
     if (!pet) throw notFound();
     return { pet };
   },
@@ -46,9 +44,14 @@ export const Route = createFileRoute("/_app/pets/$id")({
 function PetDetalhe() {
   const { pet } = Route.useLoaderData();
   const { ordensServico } = useMockData();
-  const tutor = findTutor(pet.tutorId);
-  const especie = findEspecie(pet.especieId);
-  const raca = findRaca(pet.racaId);
+  const { data: tutor } = useQuery({
+    queryKey: ["tutor", pet.tutorId],
+    queryFn: () => getTutor({ data: { id: pet.tutorId } }),
+  });
+  const { data: especies = [] } = useQuery({ queryKey: ["especies"], queryFn: () => listEspecies() });
+  const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
+  const especie = especies.find((e) => e.id === pet.especieId);
+  const raca = racas.find((r) => r.id === pet.racaId);
   const ossDoPet = ordensServico.filter((os) => os.petId === pet.id);
 
   return (

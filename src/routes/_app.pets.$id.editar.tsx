@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,8 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useDataStore } from "@/store/dataStore";
-import { findPet, useMockData } from "@/hooks/useMockData";
+import { getPet, updatePet } from "@/lib/api/pets.functions";
+import { listTutores } from "@/lib/api/tutores.functions";
+import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
 
 const schema = z.object({
   tutorId: z.string().min(1, "Tutor obrigatório."),
@@ -38,8 +40,8 @@ type FormValues = z.infer<typeof schema>;
 
 export const Route = createFileRoute("/_app/pets/$id/editar")({
   head: ({ params }) => ({ meta: [{ title: `Editar pet ${params.id} — +QAmigo` }] }),
-  loader: ({ params }) => {
-    const pet = findPet(params.id);
+  loader: async ({ params }) => {
+    const pet = await getPet({ data: { id: params.id } });
     if (!pet) throw notFound();
     return { pet };
   },
@@ -59,8 +61,9 @@ export const Route = createFileRoute("/_app/pets/$id/editar")({
 function EditarPetPage() {
   const { pet } = Route.useLoaderData();
   const navigate = useNavigate();
-  const { tutores, especies, racas } = useMockData();
-  const updatePet = useDataStore((s) => s.updatePet);
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { data: especies = [] } = useQuery({ queryKey: ["especies"], queryFn: () => listEspecies() });
+  const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -83,21 +86,29 @@ function EditarPetPage() {
     [racas, especieId],
   );
 
-  function onSubmit(values: FormValues) {
-    updatePet(pet.id, {
-      tutorId: values.tutorId,
-      nome: values.nome,
-      especieId: values.especieId || pet.especieId,
-      racaId: values.racaId || pet.racaId,
-      sexo: values.sexo,
-      cor: values.cor || "",
-      pesoKg: values.pesoKg ?? pet.pesoKg,
-      dataNascimento: values.dataNascimento || undefined,
-      dataFalecimento: values.dataFalecimento || undefined,
-    });
-    toast.success("Pet atualizado.");
-    navigate({ to: "/pets/$id", params: { id: pet.id } });
-    // TODO(api): substituir por createServerFn (updatePet).
+  async function onSubmit(values: FormValues) {
+    try {
+      await updatePet({
+        data: {
+          id: pet.id,
+          patch: {
+            tutorId: values.tutorId,
+            nome: values.nome,
+            especieId: values.especieId || pet.especieId,
+            racaId: values.racaId || pet.racaId,
+            sexo: values.sexo,
+            cor: values.cor || "",
+            pesoKg: values.pesoKg ?? pet.pesoKg,
+            dataNascimento: values.dataNascimento || undefined,
+            dataFalecimento: values.dataFalecimento || undefined,
+          },
+        },
+      });
+      toast.success("Pet atualizado.");
+      navigate({ to: "/pets/$id", params: { id: pet.id } });
+    } catch {
+      toast.error("Não foi possível atualizar o pet.");
+    }
   }
 
   return (

@@ -22,6 +22,13 @@ import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppContratosRouteImport } from './routes/_app.contratos'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
 import { Route as AppBrandBookRouteImport } from './routes/_app.brand-book'
+import { Route as AppTutoresIndexRouteImport } from './routes/_app.tutores.index'
+import { Route as AppServicosProdutosIndexRouteImport } from './routes/_app.servicos-produtos.index'
+import { Route as AppPetsIndexRouteImport } from './routes/_app.pets.index'
+import { Route as AppPagamentosIndexRouteImport } from './routes/_app.pagamentos.index'
+import { Route as AppOrdensServicoIndexRouteImport } from './routes/_app.ordens-servico.index'
+import { Route as AppContratosIndexRouteImport } from './routes/_app.contratos.index'
+import { Route as AppConfiguracoesIndexRouteImport } from './routes/_app.configuracoes.index'
 import { Route as AppTutoresNovoRouteImport } from './routes/_app.tutores.novo'
 import { Route as AppTutoresIdRouteImport } from './routes/_app.tutores.$id'
 import { Route as AppServicosProdutosNovoRouteImport } from './routes/_app.servicos-produtos.novo'
@@ -103,6 +110,42 @@ const AppBrandBookRoute = AppBrandBookRouteImport.update({
   id: '/brand-book',
   path: '/brand-book',
   getParentRoute: () => AppRoute,
+} as any)
+const AppTutoresIndexRoute = AppTutoresIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppTutoresRoute,
+} as any)
+const AppServicosProdutosIndexRoute =
+  AppServicosProdutosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppServicosProdutosRoute,
+  } as any)
+const AppPetsIndexRoute = AppPetsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppPetsRoute,
+} as any)
+const AppPagamentosIndexRoute = AppPagamentosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppPagamentosRoute,
+} as any)
+const AppOrdensServicoIndexRoute = AppOrdensServicoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppOrdensServicoRoute,
+} as any)
+const AppContratosIndexRoute = AppContratosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppContratosRoute,
+} as any)
+const AppConfiguracoesIndexRoute = AppConfiguracoesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppConfiguracoesRoute,
 } as any)
 const AppTutoresNovoRoute = AppTutoresNovoRouteImport.update({
   id: '/novo',
@@ -221,6 +264,13 @@ export interface FileRoutesByFullPath {
   '/servicos-produtos/novo': typeof AppServicosProdutosNovoRoute
   '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
+  '/configuracoes/': typeof AppConfiguracoesIndexRoute
+  '/contratos/': typeof AppContratosIndexRoute
+  '/ordens-servico/': typeof AppOrdensServicoIndexRoute
+  '/pagamentos/': typeof AppPagamentosIndexRoute
+  '/pets/': typeof AppPetsIndexRoute
+  '/servicos-produtos/': typeof AppServicosProdutosIndexRoute
+  '/tutores/': typeof AppTutoresIndexRoute
   '/pets/$id/editar': typeof AppPetsIdEditarRoute
   '/servicos-produtos/$id/editar': typeof AppServicosProdutosIdEditarRoute
   '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -230,14 +280,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/unauthorized': typeof UnauthorizedRoute
   '/brand-book': typeof AppBrandBookRoute
-  '/configuracoes': typeof AppConfiguracoesRouteWithChildren
-  '/contratos': typeof AppContratosRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
-  '/ordens-servico': typeof AppOrdensServicoRouteWithChildren
-  '/pagamentos': typeof AppPagamentosRouteWithChildren
-  '/pets': typeof AppPetsRouteWithChildren
-  '/servicos-produtos': typeof AppServicosProdutosRouteWithChildren
-  '/tutores': typeof AppTutoresRouteWithChildren
   '/configuracoes/especies': typeof AppConfiguracoesEspeciesRoute
   '/configuracoes/modalidades': typeof AppConfiguracoesModalidadesRoute
   '/configuracoes/racas': typeof AppConfiguracoesRacasRoute
@@ -252,6 +295,13 @@ export interface FileRoutesByTo {
   '/servicos-produtos/novo': typeof AppServicosProdutosNovoRoute
   '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
+  '/configuracoes': typeof AppConfiguracoesIndexRoute
+  '/contratos': typeof AppContratosIndexRoute
+  '/ordens-servico': typeof AppOrdensServicoIndexRoute
+  '/pagamentos': typeof AppPagamentosIndexRoute
+  '/pets': typeof AppPetsIndexRoute
+  '/servicos-produtos': typeof AppServicosProdutosIndexRoute
+  '/tutores': typeof AppTutoresIndexRoute
   '/pets/$id/editar': typeof AppPetsIdEditarRoute
   '/servicos-produtos/$id/editar': typeof AppServicosProdutosIdEditarRoute
   '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -285,6 +335,13 @@ export interface FileRoutesById {
   '/_app/servicos-produtos/novo': typeof AppServicosProdutosNovoRoute
   '/_app/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/_app/tutores/novo': typeof AppTutoresNovoRoute
+  '/_app/configuracoes/': typeof AppConfiguracoesIndexRoute
+  '/_app/contratos/': typeof AppContratosIndexRoute
+  '/_app/ordens-servico/': typeof AppOrdensServicoIndexRoute
+  '/_app/pagamentos/': typeof AppPagamentosIndexRoute
+  '/_app/pets/': typeof AppPetsIndexRoute
+  '/_app/servicos-produtos/': typeof AppServicosProdutosIndexRoute
+  '/_app/tutores/': typeof AppTutoresIndexRoute
   '/_app/pets/$id/editar': typeof AppPetsIdEditarRoute
   '/_app/servicos-produtos/$id/editar': typeof AppServicosProdutosIdEditarRoute
   '/_app/tutores/$id/editar': typeof AppTutoresIdEditarRoute
@@ -318,6 +375,13 @@ export interface FileRouteTypes {
     | '/servicos-produtos/novo'
     | '/tutores/$id'
     | '/tutores/novo'
+    | '/configuracoes/'
+    | '/contratos/'
+    | '/ordens-servico/'
+    | '/pagamentos/'
+    | '/pets/'
+    | '/servicos-produtos/'
+    | '/tutores/'
     | '/pets/$id/editar'
     | '/servicos-produtos/$id/editar'
     | '/tutores/$id/editar'
@@ -327,14 +391,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/unauthorized'
     | '/brand-book'
-    | '/configuracoes'
-    | '/contratos'
     | '/dashboard'
-    | '/ordens-servico'
-    | '/pagamentos'
-    | '/pets'
-    | '/servicos-produtos'
-    | '/tutores'
     | '/configuracoes/especies'
     | '/configuracoes/modalidades'
     | '/configuracoes/racas'
@@ -349,6 +406,13 @@ export interface FileRouteTypes {
     | '/servicos-produtos/novo'
     | '/tutores/$id'
     | '/tutores/novo'
+    | '/configuracoes'
+    | '/contratos'
+    | '/ordens-servico'
+    | '/pagamentos'
+    | '/pets'
+    | '/servicos-produtos'
+    | '/tutores'
     | '/pets/$id/editar'
     | '/servicos-produtos/$id/editar'
     | '/tutores/$id/editar'
@@ -381,6 +445,13 @@ export interface FileRouteTypes {
     | '/_app/servicos-produtos/novo'
     | '/_app/tutores/$id'
     | '/_app/tutores/novo'
+    | '/_app/configuracoes/'
+    | '/_app/contratos/'
+    | '/_app/ordens-servico/'
+    | '/_app/pagamentos/'
+    | '/_app/pets/'
+    | '/_app/servicos-produtos/'
+    | '/_app/tutores/'
     | '/_app/pets/$id/editar'
     | '/_app/servicos-produtos/$id/editar'
     | '/_app/tutores/$id/editar'
@@ -485,6 +556,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/brand-book'
       preLoaderRoute: typeof AppBrandBookRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/tutores/': {
+      id: '/_app/tutores/'
+      path: '/'
+      fullPath: '/tutores/'
+      preLoaderRoute: typeof AppTutoresIndexRouteImport
+      parentRoute: typeof AppTutoresRoute
+    }
+    '/_app/servicos-produtos/': {
+      id: '/_app/servicos-produtos/'
+      path: '/'
+      fullPath: '/servicos-produtos/'
+      preLoaderRoute: typeof AppServicosProdutosIndexRouteImport
+      parentRoute: typeof AppServicosProdutosRoute
+    }
+    '/_app/pets/': {
+      id: '/_app/pets/'
+      path: '/'
+      fullPath: '/pets/'
+      preLoaderRoute: typeof AppPetsIndexRouteImport
+      parentRoute: typeof AppPetsRoute
+    }
+    '/_app/pagamentos/': {
+      id: '/_app/pagamentos/'
+      path: '/'
+      fullPath: '/pagamentos/'
+      preLoaderRoute: typeof AppPagamentosIndexRouteImport
+      parentRoute: typeof AppPagamentosRoute
+    }
+    '/_app/ordens-servico/': {
+      id: '/_app/ordens-servico/'
+      path: '/'
+      fullPath: '/ordens-servico/'
+      preLoaderRoute: typeof AppOrdensServicoIndexRouteImport
+      parentRoute: typeof AppOrdensServicoRoute
+    }
+    '/_app/contratos/': {
+      id: '/_app/contratos/'
+      path: '/'
+      fullPath: '/contratos/'
+      preLoaderRoute: typeof AppContratosIndexRouteImport
+      parentRoute: typeof AppContratosRoute
+    }
+    '/_app/configuracoes/': {
+      id: '/_app/configuracoes/'
+      path: '/'
+      fullPath: '/configuracoes/'
+      preLoaderRoute: typeof AppConfiguracoesIndexRouteImport
+      parentRoute: typeof AppConfiguracoesRoute
     }
     '/_app/tutores/novo': {
       id: '/_app/tutores/novo'
@@ -613,6 +733,7 @@ interface AppConfiguracoesRouteChildren {
   AppConfiguracoesModalidadesRoute: typeof AppConfiguracoesModalidadesRoute
   AppConfiguracoesRacasRoute: typeof AppConfiguracoesRacasRoute
   AppConfiguracoesUsuariosRoute: typeof AppConfiguracoesUsuariosRoute
+  AppConfiguracoesIndexRoute: typeof AppConfiguracoesIndexRoute
 }
 
 const AppConfiguracoesRouteChildren: AppConfiguracoesRouteChildren = {
@@ -620,6 +741,7 @@ const AppConfiguracoesRouteChildren: AppConfiguracoesRouteChildren = {
   AppConfiguracoesModalidadesRoute: AppConfiguracoesModalidadesRoute,
   AppConfiguracoesRacasRoute: AppConfiguracoesRacasRoute,
   AppConfiguracoesUsuariosRoute: AppConfiguracoesUsuariosRoute,
+  AppConfiguracoesIndexRoute: AppConfiguracoesIndexRoute,
 }
 
 const AppConfiguracoesRouteWithChildren =
@@ -628,11 +750,13 @@ const AppConfiguracoesRouteWithChildren =
 interface AppContratosRouteChildren {
   AppContratosIdRoute: typeof AppContratosIdRoute
   AppContratosNovoRoute: typeof AppContratosNovoRoute
+  AppContratosIndexRoute: typeof AppContratosIndexRoute
 }
 
 const AppContratosRouteChildren: AppContratosRouteChildren = {
   AppContratosIdRoute: AppContratosIdRoute,
   AppContratosNovoRoute: AppContratosNovoRoute,
+  AppContratosIndexRoute: AppContratosIndexRoute,
 }
 
 const AppContratosRouteWithChildren = AppContratosRoute._addFileChildren(
@@ -641,10 +765,12 @@ const AppContratosRouteWithChildren = AppContratosRoute._addFileChildren(
 
 interface AppOrdensServicoRouteChildren {
   AppOrdensServicoIdRoute: typeof AppOrdensServicoIdRoute
+  AppOrdensServicoIndexRoute: typeof AppOrdensServicoIndexRoute
 }
 
 const AppOrdensServicoRouteChildren: AppOrdensServicoRouteChildren = {
   AppOrdensServicoIdRoute: AppOrdensServicoIdRoute,
+  AppOrdensServicoIndexRoute: AppOrdensServicoIndexRoute,
 }
 
 const AppOrdensServicoRouteWithChildren =
@@ -652,10 +778,12 @@ const AppOrdensServicoRouteWithChildren =
 
 interface AppPagamentosRouteChildren {
   AppPagamentosIdRoute: typeof AppPagamentosIdRoute
+  AppPagamentosIndexRoute: typeof AppPagamentosIndexRoute
 }
 
 const AppPagamentosRouteChildren: AppPagamentosRouteChildren = {
   AppPagamentosIdRoute: AppPagamentosIdRoute,
+  AppPagamentosIndexRoute: AppPagamentosIndexRoute,
 }
 
 const AppPagamentosRouteWithChildren = AppPagamentosRoute._addFileChildren(
@@ -677,11 +805,13 @@ const AppPetsIdRouteWithChildren = AppPetsIdRoute._addFileChildren(
 interface AppPetsRouteChildren {
   AppPetsIdRoute: typeof AppPetsIdRouteWithChildren
   AppPetsNovoRoute: typeof AppPetsNovoRoute
+  AppPetsIndexRoute: typeof AppPetsIndexRoute
 }
 
 const AppPetsRouteChildren: AppPetsRouteChildren = {
   AppPetsIdRoute: AppPetsIdRouteWithChildren,
   AppPetsNovoRoute: AppPetsNovoRoute,
+  AppPetsIndexRoute: AppPetsIndexRoute,
 }
 
 const AppPetsRouteWithChildren =
@@ -689,11 +819,13 @@ const AppPetsRouteWithChildren =
 
 interface AppServicosProdutosRouteChildren {
   AppServicosProdutosNovoRoute: typeof AppServicosProdutosNovoRoute
+  AppServicosProdutosIndexRoute: typeof AppServicosProdutosIndexRoute
   AppServicosProdutosIdEditarRoute: typeof AppServicosProdutosIdEditarRoute
 }
 
 const AppServicosProdutosRouteChildren: AppServicosProdutosRouteChildren = {
   AppServicosProdutosNovoRoute: AppServicosProdutosNovoRoute,
+  AppServicosProdutosIndexRoute: AppServicosProdutosIndexRoute,
   AppServicosProdutosIdEditarRoute: AppServicosProdutosIdEditarRoute,
 }
 
@@ -715,11 +847,13 @@ const AppTutoresIdRouteWithChildren = AppTutoresIdRoute._addFileChildren(
 interface AppTutoresRouteChildren {
   AppTutoresIdRoute: typeof AppTutoresIdRouteWithChildren
   AppTutoresNovoRoute: typeof AppTutoresNovoRoute
+  AppTutoresIndexRoute: typeof AppTutoresIndexRoute
 }
 
 const AppTutoresRouteChildren: AppTutoresRouteChildren = {
   AppTutoresIdRoute: AppTutoresIdRouteWithChildren,
   AppTutoresNovoRoute: AppTutoresNovoRoute,
+  AppTutoresIndexRoute: AppTutoresIndexRoute,
 }
 
 const AppTutoresRouteWithChildren = AppTutoresRoute._addFileChildren(
@@ -763,3 +897,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

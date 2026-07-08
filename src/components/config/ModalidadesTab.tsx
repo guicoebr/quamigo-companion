@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Power } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,8 +18,11 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { useMockData } from "@/hooks/useMockData";
-import { useDataStore } from "@/store/dataStore";
+import {
+  listModalidades,
+  createModalidade,
+  updateModalidade as updateModalidadeFn,
+} from "@/lib/api/lookups.functions";
 import type { ModalidadeServico } from "@/types/lookup";
 
 const schema = z.object({
@@ -28,9 +32,19 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function ModalidadesTab() {
-  const { modalidades } = useMockData();
-  const addModalidade = useDataStore((s) => s.addModalidade);
-  const updateModalidade = useDataStore((s) => s.updateModalidade);
+  const queryClient = useQueryClient();
+  const { data: modalidades = [] } = useQuery({ queryKey: ["modalidades"], queryFn: () => listModalidades() });
+  const salvar = useMutation({
+    mutationFn: (v: Values & { editandoId?: string }) =>
+      v.editandoId
+        ? updateModalidadeFn({ data: { id: v.editandoId, patch: { nome: v.nome, descricao: v.descricao || undefined } } })
+        : createModalidade({ data: { nome: v.nome, descricao: v.descricao || undefined } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["modalidades"] }),
+  });
+  const toggleAtivo = useMutation({
+    mutationFn: (m: ModalidadeServico) => updateModalidadeFn({ data: { id: m.id, patch: { ativo: !m.ativo } } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["modalidades"] }),
+  });
   const [aberto, setAberto] = useState(false);
   const [editando, setEditando] = useState<ModalidadeServico | null>(null);
 
@@ -39,13 +53,13 @@ export function ModalidadesTab() {
   });
 
   function onSubmit(v: Values) {
-    if (editando) {
-      updateModalidade(editando.id, { nome: v.nome, descricao: v.descricao || undefined });
-      toast.success("Modalidade atualizada.");
-    } else {
-      addModalidade({ id: `mod-new-${Date.now()}`, nome: v.nome, descricao: v.descricao || undefined, ativo: true });
-      toast.success("Modalidade criada.");
-    }
+    salvar.mutate(
+      { ...v, editandoId: editando?.id },
+      {
+        onSuccess: () => toast.success(editando ? "Modalidade atualizada." : "Modalidade criada."),
+        onError: () => toast.error("Não foi possível salvar a modalidade."),
+      },
+    );
     setAberto(false);
   }
 
@@ -81,7 +95,7 @@ export function ModalidadesTab() {
                       <Button size="icon" variant="ghost" onClick={() => { setEditando(m); reset({ nome: m.nome, descricao: m.descricao ?? "" }); setAberto(true); }}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => { updateModalidade(m.id, { ativo: !m.ativo }); toast.success(m.ativo ? "Inativada." : "Reativada."); }}>
+                      <Button size="icon" variant="ghost" onClick={() => toggleAtivo.mutate(m, { onSuccess: () => toast.success(m.ativo ? "Inativada." : "Reativada.") })}>
                         <Power className="h-4 w-4" />
                       </Button>
                     </div>
