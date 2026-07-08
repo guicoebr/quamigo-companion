@@ -36,8 +36,11 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/src/server/migrations ./src/server/migrations
+COPY --from=build /app/src/server ./src/server
+COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/package.json ./package.json
+COPY docker/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 EXPOSE 3000
-CMD ["node", "dist/server/index.mjs"]
+CMD ["./entrypoint.sh"]

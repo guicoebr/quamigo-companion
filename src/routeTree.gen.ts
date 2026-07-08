@@ -43,6 +43,8 @@ import { Route as AppConfiguracoesUsuariosRouteImport } from './routes/_app.conf
 import { Route as AppConfiguracoesRacasRouteImport } from './routes/_app.configuracoes.racas'
 import { Route as AppConfiguracoesModalidadesRouteImport } from './routes/_app.configuracoes.modalidades'
 import { Route as AppConfiguracoesEspeciesRouteImport } from './routes/_app.configuracoes.especies'
+import { Route as AppTutoresIdIndexRouteImport } from './routes/_app.tutores.$id.index'
+import { Route as AppPetsIdIndexRouteImport } from './routes/_app.pets.$id.index'
 import { Route as AppTutoresIdEditarRouteImport } from './routes/_app.tutores.$id.editar'
 import { Route as AppServicosProdutosIdEditarRouteImport } from './routes/_app.servicos-produtos.$id.editar'
 import { Route as AppPetsIdEditarRouteImport } from './routes/_app.pets.$id.editar'
@@ -220,6 +222,16 @@ const AppConfiguracoesEspeciesRoute =
     path: '/especies',
     getParentRoute: () => AppConfiguracoesRoute,
   } as any)
+const AppTutoresIdIndexRoute = AppTutoresIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppTutoresIdRoute,
+} as any)
+const AppPetsIdIndexRoute = AppPetsIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppPetsIdRoute,
+} as any)
 const AppTutoresIdEditarRoute = AppTutoresIdEditarRouteImport.update({
   id: '/editar',
   path: '/editar',
@@ -274,6 +286,8 @@ export interface FileRoutesByFullPath {
   '/pets/$id/editar': typeof AppPetsIdEditarRoute
   '/servicos-produtos/$id/editar': typeof AppServicosProdutosIdEditarRoute
   '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
+  '/pets/$id/': typeof AppPetsIdIndexRoute
+  '/tutores/$id/': typeof AppTutoresIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -290,10 +304,8 @@ export interface FileRoutesByTo {
   '/obitos/novo': typeof AppObitosNovoRoute
   '/ordens-servico/$id': typeof AppOrdensServicoIdRoute
   '/pagamentos/$id': typeof AppPagamentosIdRoute
-  '/pets/$id': typeof AppPetsIdRouteWithChildren
   '/pets/novo': typeof AppPetsNovoRoute
   '/servicos-produtos/novo': typeof AppServicosProdutosNovoRoute
-  '/tutores/$id': typeof AppTutoresIdRouteWithChildren
   '/tutores/novo': typeof AppTutoresNovoRoute
   '/configuracoes': typeof AppConfiguracoesIndexRoute
   '/contratos': typeof AppContratosIndexRoute
@@ -305,6 +317,8 @@ export interface FileRoutesByTo {
   '/pets/$id/editar': typeof AppPetsIdEditarRoute
   '/servicos-produtos/$id/editar': typeof AppServicosProdutosIdEditarRoute
   '/tutores/$id/editar': typeof AppTutoresIdEditarRoute
+  '/pets/$id': typeof AppPetsIdIndexRoute
+  '/tutores/$id': typeof AppTutoresIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -345,6 +359,8 @@ export interface FileRoutesById {
   '/_app/pets/$id/editar': typeof AppPetsIdEditarRoute
   '/_app/servicos-produtos/$id/editar': typeof AppServicosProdutosIdEditarRoute
   '/_app/tutores/$id/editar': typeof AppTutoresIdEditarRoute
+  '/_app/pets/$id/': typeof AppPetsIdIndexRoute
+  '/_app/tutores/$id/': typeof AppTutoresIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -385,6 +401,8 @@ export interface FileRouteTypes {
     | '/pets/$id/editar'
     | '/servicos-produtos/$id/editar'
     | '/tutores/$id/editar'
+    | '/pets/$id/'
+    | '/tutores/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -401,10 +419,8 @@ export interface FileRouteTypes {
     | '/obitos/novo'
     | '/ordens-servico/$id'
     | '/pagamentos/$id'
-    | '/pets/$id'
     | '/pets/novo'
     | '/servicos-produtos/novo'
-    | '/tutores/$id'
     | '/tutores/novo'
     | '/configuracoes'
     | '/contratos'
@@ -416,6 +432,8 @@ export interface FileRouteTypes {
     | '/pets/$id/editar'
     | '/servicos-produtos/$id/editar'
     | '/tutores/$id/editar'
+    | '/pets/$id'
+    | '/tutores/$id'
   id:
     | '__root__'
     | '/'
@@ -455,6 +473,8 @@ export interface FileRouteTypes {
     | '/_app/pets/$id/editar'
     | '/_app/servicos-produtos/$id/editar'
     | '/_app/tutores/$id/editar'
+    | '/_app/pets/$id/'
+    | '/_app/tutores/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -704,6 +724,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesEspeciesRouteImport
       parentRoute: typeof AppConfiguracoesRoute
     }
+    '/_app/tutores/$id/': {
+      id: '/_app/tutores/$id/'
+      path: '/'
+      fullPath: '/tutores/$id/'
+      preLoaderRoute: typeof AppTutoresIdIndexRouteImport
+      parentRoute: typeof AppTutoresIdRoute
+    }
+    '/_app/pets/$id/': {
+      id: '/_app/pets/$id/'
+      path: '/'
+      fullPath: '/pets/$id/'
+      preLoaderRoute: typeof AppPetsIdIndexRouteImport
+      parentRoute: typeof AppPetsIdRoute
+    }
     '/_app/tutores/$id/editar': {
       id: '/_app/tutores/$id/editar'
       path: '/editar'
@@ -792,10 +826,12 @@ const AppPagamentosRouteWithChildren = AppPagamentosRoute._addFileChildren(
 
 interface AppPetsIdRouteChildren {
   AppPetsIdEditarRoute: typeof AppPetsIdEditarRoute
+  AppPetsIdIndexRoute: typeof AppPetsIdIndexRoute
 }
 
 const AppPetsIdRouteChildren: AppPetsIdRouteChildren = {
   AppPetsIdEditarRoute: AppPetsIdEditarRoute,
+  AppPetsIdIndexRoute: AppPetsIdIndexRoute,
 }
 
 const AppPetsIdRouteWithChildren = AppPetsIdRoute._addFileChildren(
@@ -834,10 +870,12 @@ const AppServicosProdutosRouteWithChildren =
 
 interface AppTutoresIdRouteChildren {
   AppTutoresIdEditarRoute: typeof AppTutoresIdEditarRoute
+  AppTutoresIdIndexRoute: typeof AppTutoresIdIndexRoute
 }
 
 const AppTutoresIdRouteChildren: AppTutoresIdRouteChildren = {
   AppTutoresIdEditarRoute: AppTutoresIdEditarRoute,
+  AppTutoresIdIndexRoute: AppTutoresIdIndexRoute,
 }
 
 const AppTutoresIdRouteWithChildren = AppTutoresIdRoute._addFileChildren(
