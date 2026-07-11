@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { StatCard } from "@/components/cards/StatCard";
 import { StatusBadge } from "@/components/status/StatusBadge";
@@ -22,6 +23,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useMockData, findTutor, findPet } from "@/hooks/useMockData";
+import { listTutores } from "@/lib/api/tutores.functions";
+import { listPets } from "@/lib/api/pets.functions";
 import { STATUS_OS_FLOW, STATUS_OS_META } from "@/lib/osStatus";
 import { formatBRL, formatDate } from "@/lib/formatters";
 
@@ -32,6 +35,14 @@ export const Route = createFileRoute("/_app/dashboard")({
 
 function DashboardPage() {
   const { ordensServico, contratos, pagamentos, pets } = useMockData();
+  const { data: tutoresDb = [] } = useQuery({
+    queryKey: ["tutores"],
+    queryFn: () => listTutores(),
+  });
+  const { data: petsDb = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  // Registros antigos (mock) referenciam ids dos mocks; os novos referenciam ids do banco.
+  const tutorDe = (id: string) => tutoresDb.find((t) => t.id === id) ?? findTutor(id);
+  const petDe = (id: string) => petsDb.find((p) => p.id === id) ?? findPet(id);
 
   const osAbertas = ordensServico.filter((os) => os.status !== "encerrado");
   const contratosAtivos = contratos.filter((c) => c.status === "ativo");
@@ -158,7 +169,7 @@ function DashboardPage() {
               <p className="text-sm text-muted-foreground">Nenhuma parcela pendente.</p>
             )}
             {proximasParcelas.map(({ pagamento, parcela }) => {
-              const tutor = findTutor(pagamento.tutorId);
+              const tutor = tutorDe(pagamento.tutorId);
               return (
                 <div
                   key={`${pagamento.id}-${parcela.id}`}
@@ -214,8 +225,8 @@ function DashboardPage() {
               </TableHeader>
               <TableBody>
                 {osRecentes.map((os) => {
-                  const tutor = findTutor(os.tutorId);
-                  const pet = findPet(os.petId);
+                  const tutor = tutorDe(os.tutorId);
+                  const pet = petDe(os.petId);
                   const meta = STATUS_OS_META[os.status];
                   return (
                     <TableRow key={os.id}>

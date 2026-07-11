@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -15,6 +16,7 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useDataStore } from "@/store/dataStore";
 import { useMockData, findTutor, findPagamento, findOS, findContrato } from "@/hooks/useMockData";
+import { listTutores } from "@/lib/api/tutores.functions";
 import { formatBRL, formatDate } from "@/lib/formatters";
 import type { MetodoPagamento, StatusParcela, StatusPagamento } from "@/types/pagamento";
 
@@ -60,8 +62,13 @@ function PagamentoDetalhe() {
   const { pagamentoId } = Route.useLoaderData();
   // re-resolve a cada render para refletir overrides do store
   useMockData();
+  const { data: tutoresDb = [] } = useQuery({
+    queryKey: ["tutores"],
+    queryFn: () => listTutores(),
+  });
   const pag = findPagamento(pagamentoId)!;
-  const tutor = findTutor(pag.tutorId);
+  // Pagamentos antigos (mock) referenciam ids dos mocks; os novos referenciam ids do banco.
+  const tutor = tutoresDb.find((t) => t.id === pag.tutorId) ?? findTutor(pag.tutorId);
   const os = pag.ordemServicoId ? findOS(pag.ordemServicoId) : undefined;
   const contrato = pag.contratoId ? findContrato(pag.contratoId) : undefined;
   const meta = STATUS_PAG[pag.status];

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Check, ChevronLeft, ChevronRight, PawPrint } from "lucide-react";
@@ -20,7 +21,10 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-import { useMockData, findTutor, findEspecie } from "@/hooks/useMockData";
+import { listTutores } from "@/lib/api/tutores.functions";
+import { listPets } from "@/lib/api/pets.functions";
+import { listEspecies, listModalidades } from "@/lib/api/lookups.functions";
+import { listServicosProdutos } from "@/lib/api/servicos-produtos.functions";
 import { useOSStore } from "@/store/osStore";
 import { useDataStore } from "@/store/dataStore";
 import { useAuthStore } from "@/store/authStore";
@@ -63,7 +67,20 @@ const servicosSchema = z.object({
 
 function RegistrarObitoPage() {
   const navigate = useNavigate();
-  const { tutores, pets, modalidades, servicosProdutos } = useMockData();
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const { data: especies = [] } = useQuery({
+    queryKey: ["especies"],
+    queryFn: () => listEspecies(),
+  });
+  const { data: modalidades = [] } = useQuery({
+    queryKey: ["modalidades"],
+    queryFn: () => listModalidades(),
+  });
+  const { data: servicosProdutos = [] } = useQuery({
+    queryKey: ["servicos-produtos"],
+    queryFn: () => listServicosProdutos(),
+  });
   const addOS = useOSStore((s) => s.addOS);
   const addPagamento = useDataStore((s) => s.addPagamento);
   const user = useAuthStore((s) => s.user);
@@ -80,7 +97,7 @@ function RegistrarObitoPage() {
   });
   const [buscaTutor, setBuscaTutor] = useState("");
 
-  const tutorSelecionado = findTutor(form.tutorId);
+  const tutorSelecionado = tutores.find((t) => t.id === form.tutorId);
   const petsDisponiveis = useMemo(
     () => pets.filter((p) => p.tutorId === form.tutorId && !p.dataFalecimento),
     [pets, form.tutorId],
@@ -308,7 +325,7 @@ function RegistrarObitoPage() {
                               <div>
                                 <p className="text-sm font-medium">{p.nome}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {findEspecie(p.especieId)?.nome} • {p.pesoKg} kg
+                                  {especies.find((e) => e.id === p.especieId)?.nome} • {p.pesoKg} kg
                                 </p>
                               </div>
                             </button>

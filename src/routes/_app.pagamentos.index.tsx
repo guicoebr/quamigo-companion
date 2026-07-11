@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Search, ChevronDown, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { StatCard } from "@/components/cards/StatCard";
@@ -24,6 +25,7 @@ import {
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useMockData, findTutor } from "@/hooks/useMockData";
+import { listTutores } from "@/lib/api/tutores.functions";
 import { useDataStore } from "@/store/dataStore";
 import { formatBRL, formatDate } from "@/lib/formatters";
 import { toast } from "sonner";
@@ -64,6 +66,12 @@ export const Route = createFileRoute("/_app/pagamentos/")({
 
 function PagamentosPage() {
   const { pagamentos, ordensServico, contratos } = useMockData();
+  const { data: tutoresDb = [] } = useQuery({
+    queryKey: ["tutores"],
+    queryFn: () => listTutores(),
+  });
+  // Pagamentos antigos (mock) referenciam ids dos mocks; os novos referenciam ids do banco.
+  const tutorDoPagamento = (id: string) => tutoresDb.find((x) => x.id === id) ?? findTutor(id);
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [origemFiltro, setOrigemFiltro] = useState<string>("todas");
@@ -86,7 +94,7 @@ function PagamentosPage() {
     const t = busca.trim().toLowerCase();
     return pagamentos
       .filter((p) => {
-        const tutor = findTutor(p.tutorId);
+        const tutor = tutorDoPagamento(p.tutorId);
         const matchTexto =
           !t ||
           p.numero.toLowerCase().includes(t) ||
@@ -96,7 +104,8 @@ function PagamentosPage() {
         return matchTexto && matchStatus && matchOrigem;
       })
       .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
-  }, [pagamentos, busca, statusFiltro, origemFiltro]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagamentos, busca, statusFiltro, origemFiltro, tutoresDb]);
 
   function vinculo(p: (typeof pagamentos)[number]) {
     if (p.origem === "ordem_servico" && p.ordemServicoId) {
@@ -174,7 +183,7 @@ function PagamentosPage() {
               </TableHeader>
               <TableBody>
                 {filtrados.map((p) => {
-                  const tutor = findTutor(p.tutorId);
+                  const tutor = tutorDoPagamento(p.tutorId);
                   const meta = STATUS_PAG_LABEL[p.status];
                   const expandido = aberto === p.id;
                   return (

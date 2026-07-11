@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -21,6 +22,9 @@ import {
   findModalidade,
   useMockData,
 } from "@/hooks/useMockData";
+import { listTutores } from "@/lib/api/tutores.functions";
+import { listPets } from "@/lib/api/pets.functions";
+import { listModalidades } from "@/lib/api/lookups.functions";
 import { useOSStore } from "@/store/osStore";
 import { useAuthStore } from "@/store/authStore";
 import { hasPermission } from "@/lib/permissions";
@@ -55,6 +59,15 @@ export const Route = createFileRoute("/_app/ordens-servico/$id")({
 function OSDetalhe() {
   const { osId } = Route.useLoaderData();
   const { ordensServico, pagamentos } = useMockData();
+  const { data: tutoresDb = [] } = useQuery({
+    queryKey: ["tutores"],
+    queryFn: () => listTutores(),
+  });
+  const { data: petsDb = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const { data: modalidadesDb = [] } = useQuery({
+    queryKey: ["modalidades"],
+    queryFn: () => listModalidades(),
+  });
   const os = ordensServico.find((o) => o.id === osId);
   const applyStatusChange = useOSStore((s) => s.applyStatusChange);
   const user = useAuthStore((s) => s.user);
@@ -72,9 +85,11 @@ function OSDetalhe() {
     );
   }
 
-  const tutor = findTutor(os.tutorId);
-  const pet = findPet(os.petId);
-  const modalidade = findModalidade(os.modalidadeId);
+  // OS antigas (mock) referenciam ids dos mocks; as novas referenciam ids do banco.
+  const tutor = tutoresDb.find((t) => t.id === os.tutorId) ?? findTutor(os.tutorId);
+  const pet = petsDb.find((p) => p.id === os.petId) ?? findPet(os.petId);
+  const modalidade =
+    modalidadesDb.find((m) => m.id === os.modalidadeId) ?? findModalidade(os.modalidadeId);
   const pagamento = pagamentos.find((p) => p.id === os.pagamentoId);
   const meta = STATUS_OS_META[os.status];
   const proximo = nextStatus(os.status);

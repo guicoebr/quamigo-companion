@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Eye, PawPrint, Search } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,8 @@ import {
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useMockData, findTutor, findPet } from "@/hooks/useMockData";
+import { listTutores } from "@/lib/api/tutores.functions";
+import { listPets } from "@/lib/api/pets.functions";
 import { STATUS_OS_FLOW, STATUS_OS_META } from "@/lib/osStatus";
 import { formatBRL, formatDate } from "@/lib/formatters";
 
@@ -33,15 +36,24 @@ export const Route = createFileRoute("/_app/ordens-servico/")({
 
 function OrdensServicoPage() {
   const { ordensServico } = useMockData();
+  const { data: tutoresDb = [] } = useQuery({
+    queryKey: ["tutores"],
+    queryFn: () => listTutores(),
+  });
+  const { data: petsDb = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
+
+  // OS antigas (mock) referenciam ids dos mocks; as novas referenciam ids do banco.
+  const tutorDaOS = (id: string) => tutoresDb.find((t) => t.id === id) ?? findTutor(id);
+  const petDaOS = (id: string) => petsDb.find((p) => p.id === id) ?? findPet(id);
 
   const filtradas = useMemo(() => {
     const t = busca.trim().toLowerCase();
     return ordensServico
       .filter((os) => {
-        const tutor = findTutor(os.tutorId);
-        const pet = findPet(os.petId);
+        const tutor = tutorDaOS(os.tutorId);
+        const pet = petDaOS(os.petId);
         const matchTexto =
           !t ||
           os.numero.toLowerCase().includes(t) ||
@@ -51,7 +63,8 @@ function OrdensServicoPage() {
         return matchTexto && matchStatus;
       })
       .sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm));
-  }, [ordensServico, busca, statusFiltro]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ordensServico, busca, statusFiltro, tutoresDb, petsDb]);
 
   return (
     <>
@@ -115,8 +128,8 @@ function OrdensServicoPage() {
                   return (
                     <TableRow key={os.id}>
                       <TableCell className="font-medium">{os.numero}</TableCell>
-                      <TableCell>{findTutor(os.tutorId)?.nome ?? "—"}</TableCell>
-                      <TableCell>{findPet(os.petId)?.nome ?? "—"}</TableCell>
+                      <TableCell>{tutorDaOS(os.tutorId)?.nome ?? "—"}</TableCell>
+                      <TableCell>{petDaOS(os.petId)?.nome ?? "—"}</TableCell>
                       <TableCell>
                         <StatusBadge label={meta.label} color={meta.color} />
                       </TableCell>
