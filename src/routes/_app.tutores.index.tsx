@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { listTutores } from "@/lib/api/tutores.functions";
 import { listPets } from "@/lib/api/pets.functions";
-import { osDoTutor } from "@/hooks/useMockData";
+import { listOS } from "@/lib/api/ordens-servico.functions";
 import { formatCPF, formatTelefone } from "@/lib/formatters";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 
@@ -35,6 +35,10 @@ export const Route = createFileRoute("/_app/tutores/")({
 function TutoresPage() {
   const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
   const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const { data: ordensServico = [] } = useQuery({
+    queryKey: ["ordens-servico"],
+    queryFn: () => listOS(),
+  });
   const [busca, setBusca] = useState("");
   const [uf, setUf] = useState<string>("todas");
 
@@ -116,7 +120,7 @@ function TutoresPage() {
               <TableBody>
                 {filtrados.map((t) => {
                   const petsDoEsteTutor = pets.filter((p) => p.tutorId === t.id);
-                  const oss = osDoTutor(t.id);
+                  const oss = ordensServico.filter((os) => os.tutorId === t.id);
                   return (
                     <TableRow key={t.id}>
                       <TableCell className="font-medium">{t.nome}</TableCell>
@@ -129,7 +133,11 @@ function TutoresPage() {
                       <TableCell className="text-center">{oss.length}</TableCell>
                       <TableCell>
                         <Button asChild size="icon" variant="ghost">
-                          <Link to="/tutores/$id" params={{ id: t.id }} aria-label={`Ver ${t.nome}`}>
+                          <Link
+                            to="/tutores/$id"
+                            params={{ id: t.id }}
+                            aria-label={`Ver ${t.nome}`}
+                          >
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
@@ -139,7 +147,10 @@ function TutoresPage() {
                 })}
                 {filtrados.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum tutor encontrado.
                     </TableCell>
                   </TableRow>

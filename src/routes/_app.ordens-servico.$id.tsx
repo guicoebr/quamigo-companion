@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/cards/PageHeader";
@@ -15,31 +15,20 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import {
-  findOS,
-  findTutor,
-  findPet,
-  findModalidade,
-  useMockData,
-} from "@/hooks/useMockData";
 import { listTutores } from "@/lib/api/tutores.functions";
 import { listPets } from "@/lib/api/pets.functions";
 import { listModalidades } from "@/lib/api/lookups.functions";
-import { useOSStore } from "@/store/osStore";
+import { getOS, mudarStatusOS } from "@/lib/api/ordens-servico.functions";
+import { getPagamento } from "@/lib/api/pagamentos.functions";
 import { useAuthStore } from "@/store/authStore";
 import { hasPermission } from "@/lib/permissions";
-import {
-  STATUS_OS_FLOW,
-  STATUS_OS_META,
-  nextStatus,
-  prevStatus,
-} from "@/lib/osStatus";
+import { STATUS_OS_FLOW, STATUS_OS_META, nextStatus, prevStatus } from "@/lib/osStatus";
 import { formatBRL, formatDate, formatDateTime } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/ordens-servico/$id")({
   head: ({ params }) => ({ meta: [{ title: `OS ${params.id} — +QAmigo` }] }),
-  loader: ({ params }) => {
-    const os = findOS(params.id);
+  loader: async ({ params }: { params: { id: string } }) => {
+    const os = await getOS({ data: { id: params.id } }).catch(() => null);
     if (!os) throw notFound();
     return { osId: os.id };
   },
@@ -58,19 +47,34 @@ export const Route = createFileRoute("/_app/ordens-servico/$id")({
 
 function OSDetalhe() {
   const { osId } = Route.useLoaderData();
-  const { ordensServico, pagamentos } = useMockData();
-  const { data: tutoresDb = [] } = useQuery({
-    queryKey: ["tutores"],
-    queryFn: () => listTutores(),
+  const queryClient = useQueryClient();
+  const { data: os } = useQuery({
+    queryKey: ["ordens-servico", osId],
+    queryFn: () => getOS({ data: { id: osId } }),
   });
-  const { data: petsDb = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
-  const { data: modalidadesDb = [] } = useQuery({
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const { data: modalidades = [] } = useQuery({
     queryKey: ["modalidades"],
     queryFn: () => listModalidades(),
   });
-  const os = ordensServico.find((o) => o.id === osId);
-  const applyStatusChange = useOSStore((s) => s.applyStatusChange);
+  const { data: pagamento } = useQuery({
+    queryKey: ["pagamentos", os?.pagamentoId],
+    queryFn: () => getPagamento({ data: { id: os!.pagamentoId! } }),
+    enabled: !!os?.pagamentoId,
+  });
   const user = useAuthStore((s) => s.user);
+
+  const statusMutation = useMutation({
+    mutationFn: (direcao: "avancar" | "regredir") => mudarStatusOS({ data: { id: osId, direcao } }),
+    onSuccess: (atualizada, direcao) => {
+      queryClient.setQueryData(["ordens-servico", osId], atualizada);
+      queryClient.invalidateQueries({ queryKey: ["ordens-servico"] });
+      const verbo = direcao === "avancar" ? "atualizado" : "revertido";
+      toast.success(`Status ${verbo} para "${STATUS_OS_META[atualizada.status].label}".`);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao mudar status."),
+  });
 
   if (!os) {
     return (
@@ -85,40 +89,22 @@ function OSDetalhe() {
     );
   }
 
-  // OS antigas (mock) referenciam ids dos mocks; as novas referenciam ids do banco.
-  const tutor = tutoresDb.find((t) => t.id === os.tutorId) ?? findTutor(os.tutorId);
-  const pet = petsDb.find((p) => p.id === os.petId) ?? findPet(os.petId);
-  const modalidade =
-    modalidadesDb.find((m) => m.id === os.modalidadeId) ?? findModalidade(os.modalidadeId);
-  const pagamento = pagamentos.find((p) => p.id === os.pagamentoId);
+  const tutor = tutores.find((t) => t.id === os.tutorId);
+  const pet = pets.find((p) => p.id === os.petId);
+  const modalidade = modalidades.find((m) => m.id === os.modalidadeId);
   const meta = STATUS_OS_META[os.status];
   const proximo = nextStatus(os.status);
   const anterior = prevStatus(os.status);
   const stepIndex = STATUS_OS_FLOW.indexOf(os.status);
 
   function avancar() {
-    if (!proximo) return;
-    const agora = new Date().toISOString();
-    applyStatusChange(os!.id, os!, proximo, {
-      status: proximo,
-      ocorridoEm: agora,
-      usuarioId: user?.id ?? "u-system",
-      usuarioNome: user?.nome ?? "Sistema",
-    });
-    toast.success(`Status atualizado para "${STATUS_OS_META[proximo].label}".`);
+    if (!proximo || statusMutation.isPending) return;
+    statusMutation.mutate("avancar");
   }
 
   function regredir() {
-    if (!anterior) return;
-    const agora = new Date().toISOString();
-    applyStatusChange(os!.id, os!, anterior, {
-      status: anterior,
-      ocorridoEm: agora,
-      usuarioId: user?.id ?? "u-system",
-      usuarioNome: user?.nome ?? "Sistema",
-      observacao: "Status regredido manualmente.",
-    });
-    toast.success(`Status revertido para "${STATUS_OS_META[anterior].label}".`);
+    if (!anterior || statusMutation.isPending) return;
+    statusMutation.mutate("regredir");
   }
 
   return (
@@ -146,11 +132,16 @@ function OSDetalhe() {
             <RoleGuard permission="os.avancar_status">
               <div className="flex gap-2">
                 <RoleGuard permission="os.regredir_status">
-                  <Button variant="outline" size="sm" onClick={regredir} disabled={!anterior}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={regredir}
+                    disabled={!anterior || statusMutation.isPending}
+                  >
                     <ChevronLeft className="mr-1 h-4 w-4" /> Regredir
                   </Button>
                 </RoleGuard>
-                <Button size="sm" onClick={avancar} disabled={!proximo}>
+                <Button size="sm" onClick={avancar} disabled={!proximo || statusMutation.isPending}>
                   Avançar
                   {proximo && <span className="ml-1">→ {STATUS_OS_META[proximo].label}</span>}
                   <ChevronRight className="ml-1 h-4 w-4" />
@@ -196,17 +187,29 @@ function OSDetalhe() {
           <CardContent className="space-y-3 text-sm">
             <Field label="Tutor">
               {tutor ? (
-                <Link to="/tutores/$id" params={{ id: tutor.id }} className="text-primary hover:underline">
+                <Link
+                  to="/tutores/$id"
+                  params={{ id: tutor.id }}
+                  className="text-primary hover:underline"
+                >
                   {tutor.nome}
                 </Link>
-              ) : "—"}
+              ) : (
+                "—"
+              )}
             </Field>
             <Field label="Pet">
               {pet ? (
-                <Link to="/pets/$id" params={{ id: pet.id }} className="text-primary hover:underline">
+                <Link
+                  to="/pets/$id"
+                  params={{ id: pet.id }}
+                  className="text-primary hover:underline"
+                >
                   {pet.nome}
                 </Link>
-              ) : "—"}
+              ) : (
+                "—"
+              )}
             </Field>
             <Field label="Modalidade">{modalidade?.nome ?? "—"}</Field>
             {os.dataFalecimento && (
@@ -214,10 +217,16 @@ function OSDetalhe() {
             )}
             <Field label="Pagamento">
               {pagamento ? (
-                <Link to="/pagamentos" className="text-primary hover:underline">
+                <Link
+                  to="/pagamentos/$id"
+                  params={{ id: pagamento.id }}
+                  className="text-primary hover:underline"
+                >
                   {pagamento.numero}
                 </Link>
-              ) : "Sem pagamento vinculado"}
+              ) : (
+                "Sem pagamento vinculado"
+              )}
             </Field>
             {os.observacoes && <Field label="Observações">{os.observacoes}</Field>}
           </CardContent>
@@ -243,7 +252,9 @@ function OSDetalhe() {
                   <TableRow key={i.id}>
                     <TableCell>{i.descricao}</TableCell>
                     <TableCell className="text-center tabular-nums">{i.quantidade}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatBRL(i.precoUnitario)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatBRL(i.precoUnitario)}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatBRL(i.precoUnitario * i.quantidade)}
                     </TableCell>
@@ -295,7 +306,6 @@ function OSDetalhe() {
                 );
               })}
           </ol>
-          {/* TODO(api): persistir transições + auditoria via createServerFn. */}
           {!hasPermission(user?.role ?? null, "os.avancar_status") && (
             <p className="mt-4 text-xs text-muted-foreground">
               Você não tem permissão para alterar o status desta OS.

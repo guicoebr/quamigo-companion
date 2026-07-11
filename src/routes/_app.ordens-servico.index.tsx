@@ -23,9 +23,9 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import { useMockData, findTutor, findPet } from "@/hooks/useMockData";
 import { listTutores } from "@/lib/api/tutores.functions";
 import { listPets } from "@/lib/api/pets.functions";
+import { listOS } from "@/lib/api/ordens-servico.functions";
 import { STATUS_OS_FLOW, STATUS_OS_META } from "@/lib/osStatus";
 import { formatBRL, formatDate } from "@/lib/formatters";
 
@@ -35,18 +35,17 @@ export const Route = createFileRoute("/_app/ordens-servico/")({
 });
 
 function OrdensServicoPage() {
-  const { ordensServico } = useMockData();
-  const { data: tutoresDb = [] } = useQuery({
-    queryKey: ["tutores"],
-    queryFn: () => listTutores(),
+  const { data: ordensServico = [] } = useQuery({
+    queryKey: ["ordens-servico"],
+    queryFn: () => listOS(),
   });
-  const { data: petsDb = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
 
-  // OS antigas (mock) referenciam ids dos mocks; as novas referenciam ids do banco.
-  const tutorDaOS = (id: string) => tutoresDb.find((t) => t.id === id) ?? findTutor(id);
-  const petDaOS = (id: string) => petsDb.find((p) => p.id === id) ?? findPet(id);
+  const tutorDaOS = (id: string) => tutores.find((t) => t.id === id);
+  const petDaOS = (id: string) => pets.find((p) => p.id === id);
 
   const filtradas = useMemo(() => {
     const t = busca.trim().toLowerCase();
@@ -64,7 +63,7 @@ function OrdensServicoPage() {
       })
       .sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordensServico, busca, statusFiltro, tutoresDb, petsDb]);
+  }, [ordensServico, busca, statusFiltro, tutores, pets]);
 
   return (
     <>
@@ -133,11 +132,19 @@ function OrdensServicoPage() {
                       <TableCell>
                         <StatusBadge label={meta.label} color={meta.color} />
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatBRL(os.total)}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(os.atualizadoEm)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatBRL(os.total)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(os.atualizadoEm)}
+                      </TableCell>
                       <TableCell>
                         <Button asChild size="icon" variant="ghost">
-                          <Link to="/ordens-servico/$id" params={{ id: os.id }} aria-label={`Ver ${os.numero}`}>
+                          <Link
+                            to="/ordens-servico/$id"
+                            params={{ id: os.id }}
+                            aria-label={`Ver ${os.numero}`}
+                          >
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
@@ -147,7 +154,10 @@ function OrdensServicoPage() {
                 })}
                 {filtradas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Nenhuma OS encontrada.
                     </TableCell>
                   </TableRow>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,9 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useDataStore } from "@/store/dataStore";
-import { useMockData, petsDoTutor, nextContratoNumber } from "@/hooks/useMockData";
-import type { Contrato, PeriodicidadeContrato } from "@/types/contrato";
+import { listTutores } from "@/lib/api/tutores.functions";
+import { listPets } from "@/lib/api/pets.functions";
+import { listModalidades } from "@/lib/api/lookups.functions";
+import { listServicosProdutos } from "@/lib/api/servicos-produtos.functions";
+import { createContrato, listContratos } from "@/lib/api/contratos.functions";
 import { cn } from "@/lib/utils";
 
 const schema = z
@@ -49,11 +52,30 @@ export const Route = createFileRoute("/_app/contratos/novo")({
 
 function NovoContratoPage() {
   const navigate = useNavigate();
-  const { tutores, contratos, servicosProdutos, modalidades } = useMockData();
-  const addContrato = useDataStore((s) => s.addContrato);
+  const queryClient = useQueryClient();
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const { data: contratos = [] } = useQuery({
+    queryKey: ["contratos"],
+    queryFn: () => listContratos(),
+  });
+  const { data: servicosProdutos = [] } = useQuery({
+    queryKey: ["servicos-produtos"],
+    queryFn: () => listServicosProdutos(),
+  });
+  const { data: modalidades = [] } = useQuery({
+    queryKey: ["modalidades"],
+    queryFn: () => listModalidades(),
+  });
   const [buscaTutor, setBuscaTutor] = useState("");
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       petsIds: [],
@@ -75,7 +97,10 @@ function NovoContratoPage() {
     if (!t) return tutores.slice(0, 6);
     return tutores.filter((x) => x.nome.toLowerCase().includes(t));
   }, [tutores, buscaTutor]);
-  const petsDoSelecionado = useMemo(() => (tutorId ? petsDoTutor(tutorId) : []), [tutorId]);
+  const petsDoSelecionado = useMemo(
+    () => (tutorId ? pets.filter((p) => p.tutorId === tutorId) : []),
+    [pets, tutorId],
+  );
 
   /** Pets já cobertos por contratos ativos (qualquer tutor). */
   const petsBloqueados = useMemo(() => {
@@ -91,9 +116,38 @@ function NovoContratoPage() {
     setValue("petsIds", novo, { shouldValidate: true });
   }
   function toggleServico(id: string) {
-    const novo = servicosIds.includes(id) ? servicosIds.filter((x) => x !== id) : [...servicosIds, id];
+    const novo = servicosIds.includes(id)
+      ? servicosIds.filter((x) => x !== id)
+      : [...servicosIds, id];
     setValue("servicosIds", novo, { shouldValidate: true });
   }
+
+  const criarMutation = useMutation({
+    mutationFn: (values: FormValues) => {
+      const modalidadeId = modalidades.find((m) => m.ativo)?.id;
+      if (!modalidadeId) throw new Error("Nenhuma modalidade ativa cadastrada.");
+      return createContrato({
+        data: {
+          tutorId: values.tutorId,
+          petsIds: values.petsIds,
+          servicosIds: values.servicosIds,
+          modalidadeId,
+          valorMensal: Number(values.valorMensal),
+          periodicidade: values.periodicidade,
+          inicioVigencia: values.inicioVigencia,
+          fimVigencia:
+            values.modalidade === "vigencia" ? values.fimVigencia || undefined : undefined,
+          observacoes: values.descricao || undefined,
+        },
+      });
+    },
+    onSuccess: (novo) => {
+      queryClient.invalidateQueries({ queryKey: ["contratos"] });
+      toast.success(`Contrato ${novo.numero} criado.`);
+      navigate({ to: "/contratos/$id", params: { id: novo.id } });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao criar contrato."),
+  });
 
   function onSubmit(values: FormValues) {
     const conflitos = values.petsIds.filter((id) => petsBloqueados.has(id));
@@ -101,27 +155,7 @@ function NovoContratoPage() {
       toast.error("Não é possível incluir pets que já possuem contrato ativo.");
       return;
     }
-    const numero = nextContratoNumber(contratos.map((c) => c.numero));
-    const modalidadeId = modalidades.find((m) => m.ativo)?.id ?? "mod-1";
-    const novo: Contrato = {
-      id: `con-new-${Date.now()}`,
-      numero,
-      tutorId: values.tutorId,
-      petsIds: values.petsIds,
-      servicosIds: values.servicosIds,
-      modalidadeId,
-      status: "ativo",
-      valorMensal: Number(values.valorMensal),
-      periodicidade: values.periodicidade as PeriodicidadeContrato,
-      inicioVigencia: values.inicioVigencia,
-      fimVigencia: values.modalidade === "vigencia" ? values.fimVigencia || undefined : undefined,
-      observacoes: values.descricao || undefined,
-      criadoEm: new Date().toISOString(),
-    };
-    addContrato(novo);
-    toast.success(`Contrato ${numero} criado.`);
-    navigate({ to: "/contratos/$id", params: { id: novo.id } });
-    // TODO(api): substituir por createServerFn (createContrato).
+    criarMutation.mutate(values);
   }
 
   return (
@@ -142,7 +176,12 @@ function NovoContratoPage() {
             <Label className="text-xs font-medium text-muted-foreground">Tutor*</Label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={buscaTutor} onChange={(e) => setBuscaTutor(e.target.value)} placeholder="Buscar tutor" className="pl-9" />
+              <Input
+                value={buscaTutor}
+                onChange={(e) => setBuscaTutor(e.target.value)}
+                placeholder="Buscar tutor"
+                className="pl-9"
+              />
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {tutoresFiltrados.map((t) => {
@@ -151,7 +190,10 @@ function NovoContratoPage() {
                   <button
                     type="button"
                     key={t.id}
-                    onClick={() => { setValue("tutorId", t.id, { shouldValidate: true }); setValue("petsIds", []); }}
+                    onClick={() => {
+                      setValue("tutorId", t.id, { shouldValidate: true });
+                      setValue("petsIds", []);
+                    }}
                     className={cn(
                       "rounded-md border p-3 text-left transition-colors",
                       sel ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
@@ -180,7 +222,9 @@ function NovoContratoPage() {
                       key={p.id}
                       className={cn(
                         "flex items-center gap-3 rounded-md border p-3 text-sm transition-colors",
-                        bloqueado ? "border-destructive/40 bg-destructive/5 opacity-70 cursor-not-allowed" : "border-border hover:bg-muted cursor-pointer",
+                        bloqueado
+                          ? "border-destructive/40 bg-destructive/5 opacity-70 cursor-not-allowed"
+                          : "border-border hover:bg-muted cursor-pointer",
                       )}
                     >
                       <Checkbox
@@ -201,7 +245,9 @@ function NovoContratoPage() {
                   <p className="text-sm text-muted-foreground">Tutor sem pets cadastrados.</p>
                 )}
               </div>
-              {errors.petsIds && <p className="text-xs text-destructive">{errors.petsIds.message}</p>}
+              {errors.petsIds && (
+                <p className="text-xs text-destructive">{errors.petsIds.message}</p>
+              )}
             </CardContent>
           </Card>
         )}
@@ -210,34 +256,43 @@ function NovoContratoPage() {
           <CardContent className="p-6 space-y-3">
             <Label className="text-xs font-medium text-muted-foreground">Serviços cobertos*</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              {servicosProdutos.filter((s) => s.ativo).map((s) => {
-                const checked = servicosIds.includes(s.id);
-                return (
-                  <label
-                    key={s.id}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md border p-3 text-sm cursor-pointer transition-colors",
-                      checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
-                    )}
-                  >
-                    <Checkbox checked={checked} onCheckedChange={() => toggleServico(s.id)} />
-                    <div className="flex-1">
-                      <p className="font-medium">{s.nome}</p>
-                      <p className="text-xs capitalize text-muted-foreground">{s.tipo}</p>
-                    </div>
-                  </label>
-                );
-              })}
+              {servicosProdutos
+                .filter((s) => s.ativo)
+                .map((s) => {
+                  const checked = servicosIds.includes(s.id);
+                  return (
+                    <label
+                      key={s.id}
+                      className={cn(
+                        "flex items-center gap-3 rounded-md border p-3 text-sm cursor-pointer transition-colors",
+                        checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
+                      )}
+                    >
+                      <Checkbox checked={checked} onCheckedChange={() => toggleServico(s.id)} />
+                      <div className="flex-1">
+                        <p className="font-medium">{s.nome}</p>
+                        <p className="text-xs capitalize text-muted-foreground">{s.tipo}</p>
+                      </div>
+                    </label>
+                  );
+                })}
             </div>
-            {errors.servicosIds && <p className="text-xs text-destructive">{errors.servicosIds.message}</p>}
+            {errors.servicosIds && (
+              <p className="text-xs text-destructive">{errors.servicosIds.message}</p>
+            )}
           </CardContent>
         </Card>
 
         <Card className="rounded-[12px]">
           <CardContent className="p-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Modalidade*" error={errors.modalidade?.message}>
-              <Select defaultValue={modalidade} onValueChange={(v) => setValue("modalidade", v as "recorrente" | "vigencia")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                defaultValue={modalidade}
+                onValueChange={(v) => setValue("modalidade", v as "recorrente" | "vigencia")}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="recorrente">Recorrente</SelectItem>
                   <SelectItem value="vigencia">Vigência</SelectItem>
@@ -245,8 +300,15 @@ function NovoContratoPage() {
               </Select>
             </Field>
             <Field label="Periodicidade*" error={errors.periodicidade?.message}>
-              <Select defaultValue="mensal" onValueChange={(v) => setValue("periodicidade", v as "mensal" | "trimestral" | "anual")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                defaultValue="mensal"
+                onValueChange={(v) =>
+                  setValue("periodicidade", v as "mensal" | "trimestral" | "anual")
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="mensal">Mensal</SelectItem>
                   <SelectItem value="trimestral">Trimestral</SelectItem>
@@ -274,14 +336,25 @@ function NovoContratoPage() {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit"><Save className="mr-2 h-4 w-4" /> Criar contrato</Button>
+          <Button type="submit" disabled={criarMutation.isPending}>
+            <Save className="mr-2 h-4 w-4" />
+            {criarMutation.isPending ? "Criando..." : "Criar contrato"}
+          </Button>
         </div>
       </form>
     </>
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs font-medium text-muted-foreground">{label}</Label>

@@ -17,13 +17,13 @@ import { StatusBadge } from "@/components/status/StatusBadge";
 import { getPet } from "@/lib/api/pets.functions";
 import { getTutor } from "@/lib/api/tutores.functions";
 import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
-import { useMockData } from "@/hooks/useMockData";
+import { listOS } from "@/lib/api/ordens-servico.functions";
 import { STATUS_OS_META } from "@/lib/osStatus";
 import { formatBRL, formatDate } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/pets/$id/")({
   head: ({ params }) => ({ meta: [{ title: `Pet ${params.id} — +QAmigo` }] }),
-  loader: async ({ params }) => {
+  loader: async ({ params }: { params: { id: string } }) => {
     const pet = await getPet({ data: { id: params.id } });
     if (!pet) throw notFound();
     return { pet };
@@ -45,12 +45,18 @@ const routeApi = getRouteApi("/_app/pets/$id/");
 
 function PetDetalhe() {
   const { pet } = routeApi.useLoaderData();
-  const { ordensServico } = useMockData();
+  const { data: ordensServico = [] } = useQuery({
+    queryKey: ["ordens-servico"],
+    queryFn: () => listOS(),
+  });
   const { data: tutor } = useQuery({
     queryKey: ["tutor", pet.tutorId],
     queryFn: () => getTutor({ data: { id: pet.tutorId } }),
   });
-  const { data: especies = [] } = useQuery({ queryKey: ["especies"], queryFn: () => listEspecies() });
+  const { data: especies = [] } = useQuery({
+    queryKey: ["especies"],
+    queryFn: () => listEspecies(),
+  });
   const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
   const especie = especies.find((e) => e.id === pet.especieId);
   const raca = racas.find((r) => r.id === pet.racaId);
@@ -101,7 +107,10 @@ function PetDetalhe() {
             )}
             <div>
               {pet.dataFalecimento ? (
-                <StatusBadge label={`Falecido em ${formatDate(pet.dataFalecimento)}`} tone="neutral" />
+                <StatusBadge
+                  label={`Falecido em ${formatDate(pet.dataFalecimento)}`}
+                  tone="neutral"
+                />
               ) : (
                 <StatusBadge label="Vivo" tone="success" />
               )}
@@ -161,7 +170,9 @@ function PetDetalhe() {
                       <StatusBadge label={meta.label} color={meta.color} />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(os.total)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(os.criadoEm)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(os.criadoEm)}
+                    </TableCell>
                   </TableRow>
                 );
               })}

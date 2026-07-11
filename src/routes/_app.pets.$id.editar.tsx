@@ -40,7 +40,7 @@ type FormValues = z.infer<typeof schema>;
 
 export const Route = createFileRoute("/_app/pets/$id/editar")({
   head: ({ params }) => ({ meta: [{ title: `Editar pet ${params.id} — +QAmigo` }] }),
-  loader: async ({ params }) => {
+  loader: async ({ params }: { params: { id: string } }) => {
     const pet = await getPet({ data: { id: params.id } });
     if (!pet) throw notFound();
     return { pet };
@@ -62,10 +62,19 @@ function EditarPetPage() {
   const { pet } = Route.useLoaderData();
   const navigate = useNavigate();
   const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
-  const { data: especies = [] } = useQuery({ queryKey: ["especies"], queryFn: () => listEspecies() });
+  const { data: especies = [] } = useQuery({
+    queryKey: ["especies"],
+    queryFn: () => listEspecies(),
+  });
   const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       tutorId: pet.tutorId,
@@ -132,10 +141,14 @@ function EditarPetPage() {
                 value={watch("tutorId")}
                 onValueChange={(v) => setValue("tutorId", v, { shouldValidate: true })}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
                   {tutores.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.nome}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -146,13 +159,22 @@ function EditarPetPage() {
             <Field label="Espécie" error={errors.especieId?.message}>
               <Select
                 value={watch("especieId") || undefined}
-                onValueChange={(v) => { setValue("especieId", v); setValue("racaId", ""); }}
+                onValueChange={(v) => {
+                  setValue("especieId", v);
+                  setValue("racaId", "");
+                }}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
-                  {especies.filter((e) => e.ativo).map((e) => (
-                    <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
-                  ))}
+                  {especies
+                    .filter((e) => e.ativo)
+                    .map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.nome}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -161,11 +183,19 @@ function EditarPetPage() {
                 value={watch("racaId") || undefined}
                 onValueChange={(v) => setValue("racaId", v)}
               >
-                <SelectTrigger><SelectValue placeholder={especieId ? "Selecione" : "Escolha a espécie primeiro"} /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={especieId ? "Selecione" : "Escolha a espécie primeiro"}
+                  />
+                </SelectTrigger>
                 <SelectContent>
-                  {racasFiltradas.filter((r) => r.ativo).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
-                  ))}
+                  {racasFiltradas
+                    .filter((r) => r.ativo)
+                    .map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.nome}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -174,7 +204,9 @@ function EditarPetPage() {
                 value={watch("sexo")}
                 onValueChange={(v) => setValue("sexo", v as "macho" | "femea")}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="macho">Macho</SelectItem>
                   <SelectItem value="femea">Fêmea</SelectItem>
@@ -194,7 +226,9 @@ function EditarPetPage() {
               <Input type="date" {...register("dataFalecimento")} />
             </Field>
             <div className="md:col-span-2 flex justify-end">
-              <Button type="submit"><Save className="mr-2 h-4 w-4" /> Salvar alterações</Button>
+              <Button type="submit">
+                <Save className="mr-2 h-4 w-4" /> Salvar alterações
+              </Button>
             </div>
           </form>
         </CardContent>
@@ -203,7 +237,15 @@ function EditarPetPage() {
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs font-medium text-muted-foreground">{label}</Label>

@@ -16,19 +16,14 @@ import {
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { getTutor } from "@/lib/api/tutores.functions";
 import { listPets } from "@/lib/api/pets.functions";
-import { osDoTutor, findEspecie, findRaca } from "@/hooks/useMockData";
+import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
+import { listOS } from "@/lib/api/ordens-servico.functions";
 import { STATUS_OS_META } from "@/lib/osStatus";
-import {
-  formatBRL,
-  formatCEP,
-  formatCPF,
-  formatDate,
-  formatTelefone,
-} from "@/lib/formatters";
+import { formatBRL, formatCEP, formatCPF, formatDate, formatTelefone } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/tutores/$id/")({
   head: ({ params }) => ({ meta: [{ title: `Tutor ${params.id} — +QAmigo` }] }),
-  loader: async ({ params }) => {
+  loader: async ({ params }: { params: { id: string } }) => {
     const tutor = await getTutor({ data: { id: params.id } });
     if (!tutor) throw notFound();
     return { tutor };
@@ -51,8 +46,17 @@ const routeApi = getRouteApi("/_app/tutores/$id/");
 function TutorDetalhe() {
   const { tutor } = routeApi.useLoaderData();
   const { data: todosPets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const { data: especies = [] } = useQuery({
+    queryKey: ["especies"],
+    queryFn: () => listEspecies(),
+  });
+  const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
+  const { data: todasOS = [] } = useQuery({
+    queryKey: ["ordens-servico"],
+    queryFn: () => listOS(),
+  });
   const pets = todosPets.filter((p) => p.tutorId === tutor.id);
-  const oss = osDoTutor(tutor.id);
+  const oss = todasOS.filter((os) => os.tutorId === tutor.id);
 
   return (
     <>
@@ -133,7 +137,8 @@ function TutorDetalhe() {
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.nome}</TableCell>
                     <TableCell>
-                      {findEspecie(p.especieId)?.nome ?? "—"} • {findRaca(p.racaId)?.nome ?? "—"}
+                      {especies.find((e) => e.id === p.especieId)?.nome ?? "—"} •{" "}
+                      {racas.find((r) => r.id === p.racaId)?.nome ?? "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{p.pesoKg} kg</TableCell>
                     <TableCell>
@@ -163,7 +168,10 @@ function TutorDetalhe() {
                 ))}
                 {pets.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="py-6 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum pet cadastrado.
                     </TableCell>
                   </TableRow>
@@ -200,7 +208,9 @@ function TutorDetalhe() {
                       <StatusBadge label={meta.label} color={meta.color} />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(os.total)}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(os.criadoEm)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(os.criadoEm)}
+                    </TableCell>
                   </TableRow>
                 );
               })}

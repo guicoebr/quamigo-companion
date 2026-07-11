@@ -35,25 +35,4 @@ export function formatCEP(cep: string): string {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
-/** Gera próximo número de OS no formato OS-AAAA-NNNNN. */
-export function nextOSNumber(existing: string[]): string {
-  const year = new Date().getFullYear();
-  const prefix = `OS-${year}-`;
-  const maxSeq = existing
-    .filter((n) => n.startsWith(prefix))
-    .map((n) => parseInt(n.slice(prefix.length), 10))
-    .filter((n) => !Number.isNaN(n))
-    .reduce((a, b) => Math.max(a, b), 0);
-  return `${prefix}${String(maxSeq + 1).padStart(5, "0")}`;
-}
-
-export function nextPagamentoNumber(existing: string[]): string {
-  const year = new Date().getFullYear();
-  const prefix = `PG-${year}-`;
-  const maxSeq = existing
-    .filter((n) => n.startsWith(prefix))
-    .map((n) => parseInt(n.slice(prefix.length), 10))
-    .filter((n) => !Number.isNaN(n))
-    .reduce((a, b) => Math.max(a, b), 0);
-  return `${prefix}${String(maxSeq + 1).padStart(5, "0")}`;
-}
+// Numeração de OS/PG/CT agora é atômica no servidor — ver src/server/numbering.server.ts.

@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, ChevronDown, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { StatCard } from "@/components/cards/StatCard";
@@ -24,27 +24,29 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import { useMockData, findTutor } from "@/hooks/useMockData";
 import { listTutores } from "@/lib/api/tutores.functions";
-import { useDataStore } from "@/store/dataStore";
+import { darBaixaParcela, listPagamentos } from "@/lib/api/pagamentos.functions";
+import { listOS } from "@/lib/api/ordens-servico.functions";
+import { listContratos } from "@/lib/api/contratos.functions";
 import { formatBRL, formatDate } from "@/lib/formatters";
 import { toast } from "sonner";
 import { Wallet, AlertTriangle, CheckCircle2 } from "lucide-react";
-import type {
-  StatusPagamento,
-  StatusParcela,
-  MetodoPagamento,
-  Pagamento,
-} from "@/types/pagamento";
+import type { StatusPagamento, StatusParcela, MetodoPagamento, Pagamento } from "@/types/pagamento";
 
-const STATUS_PAG_LABEL: Record<StatusPagamento, { label: string; tone: "warning" | "info" | "success" | "neutral" }> = {
+const STATUS_PAG_LABEL: Record<
+  StatusPagamento,
+  { label: string; tone: "warning" | "info" | "success" | "neutral" }
+> = {
   aberto: { label: "Em aberto", tone: "warning" },
   parcial: { label: "Parcial", tone: "info" },
   quitado: { label: "Quitado", tone: "success" },
   cancelado: { label: "Cancelado", tone: "neutral" },
 };
 
-const STATUS_PARC_LABEL: Record<StatusParcela, { label: string; tone: "warning" | "success" | "error" | "neutral" }> = {
+const STATUS_PARC_LABEL: Record<
+  StatusParcela,
+  { label: string; tone: "warning" | "success" | "error" | "neutral" }
+> = {
   pendente: { label: "Pendente", tone: "warning" },
   pago: { label: "Pago", tone: "success" },
   atrasado: { label: "Atrasado", tone: "error" },
@@ -65,13 +67,20 @@ export const Route = createFileRoute("/_app/pagamentos/")({
 });
 
 function PagamentosPage() {
-  const { pagamentos, ordensServico, contratos } = useMockData();
-  const { data: tutoresDb = [] } = useQuery({
-    queryKey: ["tutores"],
-    queryFn: () => listTutores(),
+  const { data: pagamentos = [] } = useQuery({
+    queryKey: ["pagamentos"],
+    queryFn: () => listPagamentos(),
   });
-  // Pagamentos antigos (mock) referenciam ids dos mocks; os novos referenciam ids do banco.
-  const tutorDoPagamento = (id: string) => tutoresDb.find((x) => x.id === id) ?? findTutor(id);
+  const { data: ordensServico = [] } = useQuery({
+    queryKey: ["ordens-servico"],
+    queryFn: () => listOS(),
+  });
+  const { data: contratos = [] } = useQuery({
+    queryKey: ["contratos"],
+    queryFn: () => listContratos(),
+  });
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const tutorDoPagamento = (id: string) => tutores.find((x) => x.id === id);
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [origemFiltro, setOrigemFiltro] = useState<string>("todas");
@@ -105,7 +114,7 @@ function PagamentosPage() {
       })
       .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagamentos, busca, statusFiltro, origemFiltro, tutoresDb]);
+  }, [pagamentos, busca, statusFiltro, origemFiltro, tutores]);
 
   function vinculo(p: (typeof pagamentos)[number]) {
     if (p.origem === "ordem_servico" && p.ordemServicoId) {
@@ -127,9 +136,24 @@ function PagamentosPage() {
       />
 
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="A receber" value={formatBRL(totais.aReceber)} icon={Wallet} tone="warning" />
-        <StatCard label="Parcelas atrasadas" value={totais.atrasadas} icon={AlertTriangle} tone="error" />
-        <StatCard label="Total recebido" value={formatBRL(totais.recebido)} icon={CheckCircle2} tone="success" />
+        <StatCard
+          label="A receber"
+          value={formatBRL(totais.aReceber)}
+          icon={Wallet}
+          tone="warning"
+        />
+        <StatCard
+          label="Parcelas atrasadas"
+          value={totais.atrasadas}
+          icon={AlertTriangle}
+          tone="error"
+        />
+        <StatCard
+          label="Total recebido"
+          value={formatBRL(totais.recebido)}
+          icon={CheckCircle2}
+          tone="success"
+        />
       </div>
 
       <Card className="rounded-[12px]">
@@ -151,7 +175,9 @@ function PagamentosPage() {
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
                 {Object.entries(STATUS_PAG_LABEL).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                  <SelectItem key={k} value={k}>
+                    {v.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -219,17 +245,23 @@ function PagamentosPage() {
                             >
                               {tutor.nome}
                             </Link>
-                          ) : "—"}
+                          ) : (
+                            "—"
+                          )}
                         </TableCell>
                         <TableCell className="capitalize">
                           {p.origem === "ordem_servico" ? "OS" : "Contrato"}
                         </TableCell>
                         <TableCell className="font-mono text-xs">{vinculo(p)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatBRL(p.valorTotal)}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatBRL(p.valorTotal)}
+                        </TableCell>
                         <TableCell>
                           <StatusBadge label={meta.label} tone={meta.tone} />
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{formatDate(p.criadoEm)}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDate(p.criadoEm)}
+                        </TableCell>
                       </TableRow>
                       {expandido && (
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -243,7 +275,10 @@ function PagamentosPage() {
                 })}
                 {filtrados.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum pagamento encontrado.
                     </TableCell>
                   </TableRow>
@@ -251,7 +286,6 @@ function PagamentosPage() {
               </TableBody>
             </Table>
           </div>
-          {/* TODO(api): listagem real + ações de baixa via createServerFn. */}
         </CardContent>
       </Card>
     </>
@@ -259,7 +293,17 @@ function PagamentosPage() {
 }
 
 function ParcelasTable({ pagamento }: { pagamento: Pagamento }) {
-  const darBaixa = useDataStore((s) => s.darBaixaParcela);
+  const queryClient = useQueryClient();
+  const baixaMutation = useMutation({
+    mutationFn: (parcelaId: string) =>
+      darBaixaParcela({ data: { pagamentoId: pagamento.id, parcelaId, metodo: "pix" } }),
+    onSuccess: (_, parcelaId) => {
+      queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
+      const numero = pagamento.parcelas.find((p) => p.id === parcelaId)?.numero;
+      toast.success(`Parcela ${numero} baixada (PIX).`);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao dar baixa."),
+  });
   return (
     <div className="space-y-3">
       <p className="text-sm font-semibold">Parcelas</p>
@@ -296,10 +340,8 @@ function ParcelasTable({ pagamento }: { pagamento: Pagamento }) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          darBaixa(pagamento.id, par.id, "pix", pagamento);
-                          toast.success(`Parcela ${par.numero} baixada (PIX).`);
-                        }}
+                        disabled={baixaMutation.isPending}
+                        onClick={() => baixaMutation.mutate(par.id)}
                       >
                         Dar baixa
                       </Button>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Eye, Plus, Search } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { StatCard } from "@/components/cards/StatCard";
@@ -23,12 +24,16 @@ import {
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import { useMockData, findTutor } from "@/hooks/useMockData";
+import { listContratos } from "@/lib/api/contratos.functions";
+import { listTutores } from "@/lib/api/tutores.functions";
 import { formatBRL, formatDate } from "@/lib/formatters";
 import { FileSignature, CheckCircle2 } from "lucide-react";
 import type { StatusContrato } from "@/types/contrato";
 
-const STATUS_LABEL: Record<StatusContrato, { label: string; tone: "success" | "warning" | "neutral" }> = {
+const STATUS_LABEL: Record<
+  StatusContrato,
+  { label: string; tone: "success" | "warning" | "neutral" }
+> = {
   ativo: { label: "Ativo", tone: "success" },
   suspenso: { label: "Suspenso", tone: "warning" },
   encerrado: { label: "Encerrado", tone: "neutral" },
@@ -40,17 +45,22 @@ export const Route = createFileRoute("/_app/contratos/")({
 });
 
 function ContratosPage() {
-  const { contratos } = useMockData();
+  const { data: contratos = [] } = useQuery({
+    queryKey: ["contratos"],
+    queryFn: () => listContratos(),
+  });
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
 
+  const tutorDe = (id: string) => tutores.find((t) => t.id === id);
   const ativos = contratos.filter((c) => c.status === "ativo");
   const receitaMensal = ativos.reduce((a, c) => a + c.valorMensal, 0);
 
   const filtrados = useMemo(() => {
     const t = busca.trim().toLowerCase();
     return contratos.filter((c) => {
-      const tutor = findTutor(c.tutorId);
+      const tutor = tutores.find((x) => x.id === c.tutorId);
       const matchTexto =
         !t ||
         c.numero.toLowerCase().includes(t) ||
@@ -58,7 +68,7 @@ function ContratosPage() {
       const matchStatus = statusFiltro === "todos" || c.status === statusFiltro;
       return matchTexto && matchStatus;
     });
-  }, [contratos, busca, statusFiltro]);
+  }, [contratos, tutores, busca, statusFiltro]);
 
   return (
     <>
@@ -77,8 +87,18 @@ function ContratosPage() {
       />
 
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Contratos ativos" value={ativos.length} icon={FileSignature} tone="success" />
-        <StatCard label="Receita mensal estimada" value={formatBRL(receitaMensal)} icon={CheckCircle2} tone="primary" />
+        <StatCard
+          label="Contratos ativos"
+          value={ativos.length}
+          icon={FileSignature}
+          tone="success"
+        />
+        <StatCard
+          label="Receita mensal estimada"
+          value={formatBRL(receitaMensal)}
+          icon={CheckCircle2}
+          tone="primary"
+        />
         <StatCard label="Total de contratos" value={contratos.length} />
       </div>
 
@@ -101,7 +121,9 @@ function ContratosPage() {
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
                 {Object.entries(STATUS_LABEL).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                  <SelectItem key={k} value={k}>
+                    {v.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -123,7 +145,7 @@ function ContratosPage() {
               </TableHeader>
               <TableBody>
                 {filtrados.map((c) => {
-                  const tutor = findTutor(c.tutorId);
+                  const tutor = tutorDe(c.tutorId);
                   const meta = STATUS_LABEL[c.status];
                   return (
                     <TableRow key={c.id}>
@@ -131,7 +153,9 @@ function ContratosPage() {
                       <TableCell>{tutor?.nome ?? "—"}</TableCell>
                       <TableCell className="text-center">{c.petsIds.length}</TableCell>
                       <TableCell className="capitalize">{c.periodicidade}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatBRL(c.valorMensal)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatBRL(c.valorMensal)}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatDate(c.inicioVigencia)}
                         {c.fimVigencia ? ` → ${formatDate(c.fimVigencia)}` : ""}
@@ -141,7 +165,11 @@ function ContratosPage() {
                       </TableCell>
                       <TableCell>
                         <Button asChild size="icon" variant="ghost">
-                          <Link to="/contratos/$id" params={{ id: c.id }} aria-label={`Ver ${c.numero}`}>
+                          <Link
+                            to="/contratos/$id"
+                            params={{ id: c.id }}
+                            aria-label={`Ver ${c.numero}`}
+                          >
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
@@ -151,7 +179,10 @@ function ContratosPage() {
                 })}
                 {filtrados.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell
+                      colSpan={8}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
                       Nenhum contrato encontrado.
                     </TableCell>
                   </TableRow>
@@ -159,7 +190,6 @@ function ContratosPage() {
               </TableBody>
             </Table>
           </div>
-          {/* TODO(api): listagem + filtros via createServerFn. */}
         </CardContent>
       </Card>
     </>

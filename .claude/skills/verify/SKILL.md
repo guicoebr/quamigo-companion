@@ -31,6 +31,13 @@ Usuários do seed (senha `123456` para todos): `admin@qamigo.com`, `op@qamigo.co
 
 ## Seletores que funcionam
 - Forms (react-hook-form): `input[name="nome"]` etc. Os labels NÃO têm `htmlFor`.
+- CUIDADO: o topbar tem `placeholder="Buscar tutor, pet ou OS..."` — seletores com
+  `placeholder*=` casam nele antes do campo do form. Use match exato
+  (`input[placeholder="Buscar tutor"]`) ou `input[placeholder^=...]` específico.
+- Os nomes do seed demo são completos ("Gustavo Henrique Martins") — busque por
+  substring real, não por nome inventado.
+- Para trocar de usuário logado: `Network.clearBrowserCookies` via CDP antes de ir
+  ao /login (com sessão ativa, /login redireciona ao dashboard).
 - Selects shadcn/radix: clique no `button[role="combobox"]` e depois em `[role="option"]`.
 - Cards de seleção de tutor/pet (wizard de óbito, form de pet): `button p` com o texto do nome.
 

@@ -22,9 +22,11 @@ import {
   PawPrint,
   ArrowRight,
 } from "lucide-react";
-import { useMockData, findTutor, findPet } from "@/hooks/useMockData";
 import { listTutores } from "@/lib/api/tutores.functions";
 import { listPets } from "@/lib/api/pets.functions";
+import { listOS } from "@/lib/api/ordens-servico.functions";
+import { listPagamentos } from "@/lib/api/pagamentos.functions";
+import { listContratos } from "@/lib/api/contratos.functions";
 import { STATUS_OS_FLOW, STATUS_OS_META } from "@/lib/osStatus";
 import { formatBRL, formatDate } from "@/lib/formatters";
 
@@ -34,15 +36,22 @@ export const Route = createFileRoute("/_app/dashboard")({
 });
 
 function DashboardPage() {
-  const { ordensServico, contratos, pagamentos, pets } = useMockData();
-  const { data: tutoresDb = [] } = useQuery({
-    queryKey: ["tutores"],
-    queryFn: () => listTutores(),
+  const { data: ordensServico = [] } = useQuery({
+    queryKey: ["ordens-servico"],
+    queryFn: () => listOS(),
   });
-  const { data: petsDb = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
-  // Registros antigos (mock) referenciam ids dos mocks; os novos referenciam ids do banco.
-  const tutorDe = (id: string) => tutoresDb.find((t) => t.id === id) ?? findTutor(id);
-  const petDe = (id: string) => petsDb.find((p) => p.id === id) ?? findPet(id);
+  const { data: contratos = [] } = useQuery({
+    queryKey: ["contratos"],
+    queryFn: () => listContratos(),
+  });
+  const { data: pagamentos = [] } = useQuery({
+    queryKey: ["pagamentos"],
+    queryFn: () => listPagamentos(),
+  });
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const tutorDe = (id: string) => tutores.find((t) => t.id === id);
+  const petDe = (id: string) => pets.find((p) => p.id === id);
 
   const osAbertas = ordensServico.filter((os) => os.status !== "encerrado");
   const contratosAtivos = contratos.filter((c) => c.status === "ativo");

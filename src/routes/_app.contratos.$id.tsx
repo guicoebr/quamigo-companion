@@ -1,11 +1,8 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, PawPrint, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/auth/RoleGuard";
-import { useDataStore } from "@/store/dataStore";
-import { pagamentosMock } from "@/mocks/pagamentos";
-import { nextPagamentoNumber } from "@/lib/formatters";
-import type { Pagamento } from "@/types/pagamento";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,19 +15,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status/StatusBadge";
-import {
-  useMockData,
-  findTutor,
-  findPet,
-  findEspecie,
-  findModalidade,
-  findServicoProduto,
-} from "@/hooks/useMockData";
-import { contratosMock } from "@/mocks/contratos";
+import { getContrato, gerarCobrancaContrato } from "@/lib/api/contratos.functions";
+import { listPagamentos } from "@/lib/api/pagamentos.functions";
+import { listTutores } from "@/lib/api/tutores.functions";
+import { listPets } from "@/lib/api/pets.functions";
+import { listEspecies, listModalidades } from "@/lib/api/lookups.functions";
+import { listServicosProdutos } from "@/lib/api/servicos-produtos.functions";
 import { formatBRL, formatDate } from "@/lib/formatters";
 import type { StatusParcela } from "@/types/pagamento";
 
-const STATUS_PARC: Record<StatusParcela, { label: string; tone: "warning" | "success" | "error" | "neutral" }> = {
+const STATUS_PARC: Record<
+  StatusParcela,
+  { label: string; tone: "warning" | "success" | "error" | "neutral" }
+> = {
   pendente: { label: "Pendente", tone: "warning" },
   pago: { label: "Pago", tone: "success" },
   atrasado: { label: "Atrasado", tone: "error" },
@@ -39,8 +36,8 @@ const STATUS_PARC: Record<StatusParcela, { label: string; tone: "warning" | "suc
 
 export const Route = createFileRoute("/_app/contratos/$id")({
   head: ({ params }) => ({ meta: [{ title: `Contrato ${params.id} — +QAmigo` }] }),
-  loader: ({ params }) => {
-    const c = contratosMock.find((x) => x.id === params.id);
+  loader: async ({ params }: { params: { id: string } }) => {
+    const c = await getContrato({ data: { id: params.id } }).catch(() => null);
     if (!c) throw notFound();
     return { contratoId: c.id };
   },
@@ -59,59 +56,54 @@ export const Route = createFileRoute("/_app/contratos/$id")({
 
 function ContratoDetalhe() {
   const { contratoId } = Route.useLoaderData();
-  const { contratos, pagamentos } = useMockData();
-  const c = contratos.find((x) => x.id === contratoId);
+  const queryClient = useQueryClient();
+  const { data: c } = useQuery({
+    queryKey: ["contratos", contratoId],
+    queryFn: () => getContrato({ data: { id: contratoId } }),
+  });
+  const { data: pagamentos = [] } = useQuery({
+    queryKey: ["pagamentos"],
+    queryFn: () => listPagamentos(),
+  });
+  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { data: todosPets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
+  const { data: especies = [] } = useQuery({
+    queryKey: ["especies"],
+    queryFn: () => listEspecies(),
+  });
+  const { data: modalidades = [] } = useQuery({
+    queryKey: ["modalidades"],
+    queryFn: () => listModalidades(),
+  });
+  const { data: servicosProdutos = [] } = useQuery({
+    queryKey: ["servicos-produtos"],
+    queryFn: () => listServicosProdutos(),
+  });
+
+  const cobrancaMutation = useMutation({
+    mutationFn: () => gerarCobrancaContrato({ data: { contratoId } }),
+    onSuccess: (novo) => {
+      queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
+      toast.success(`Cobrança ${novo.numero} gerada.`);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao gerar cobrança."),
+  });
+
   if (!c) return null;
 
-  const tutor = findTutor(c.tutorId);
-  const modalidade = findModalidade(c.modalidadeId);
-  const pets = c.petsIds.map(findPet).filter(Boolean) as NonNullable<ReturnType<typeof findPet>>[];
-  const servicos = c.servicosIds.map(findServicoProduto).filter(Boolean) as NonNullable<
-    ReturnType<typeof findServicoProduto>
-  >[];
+  const tutor = tutores.find((t) => t.id === c.tutorId);
+  const modalidade = modalidades.find((m) => m.id === c.modalidadeId);
+  const pets = c.petsIds
+    .map((id) => todosPets.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => !!p);
+  const servicos = c.servicosIds
+    .map((id) => servicosProdutos.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => !!s);
   const cobrancas = pagamentos.filter((p) => p.contratoId === c.id);
 
-  const contrato = c;
   function handleGerarCobranca() {
-    const agora = new Date();
-    const yyyy = agora.getFullYear();
-    const mm = String(agora.getMonth() + 1).padStart(2, "0");
-    const jaExiste = cobrancas.some((p) => {
-      const d = new Date(p.criadoEm);
-      return d.getFullYear() === yyyy && d.getMonth() === agora.getMonth();
-    });
-    if (jaExiste) {
-      toast.error(`Já existe uma cobrança gerada para ${mm}/${yyyy}.`);
-      return;
-    }
-    const numero = nextPagamentoNumber([
-      ...pagamentosMock.map((p) => p.numero),
-      ...useDataStore.getState().pagamentosNovos.map((p) => p.numero),
-    ]);
-    const venc = new Date();
-    venc.setDate(venc.getDate() + 7);
-    const novo: Pagamento = {
-      id: `pag-new-${Date.now()}`,
-      numero,
-      origem: "contrato",
-      contratoId: contrato.id,
-      tutorId: contrato.tutorId,
-      valorTotal: contrato.valorMensal,
-      status: "aberto",
-      parcelas: [
-        {
-          id: `par-${Date.now()}`,
-          numero: 1,
-          valor: contrato.valorMensal,
-          vencimento: venc.toISOString().slice(0, 10),
-          status: "pendente",
-        },
-      ],
-      criadoEm: agora.toISOString(),
-    };
-    useDataStore.getState().addPagamento(novo);
-    toast.success(`Cobrança ${numero} gerada.`);
-    // TODO(api): substituir por createServerFn (gerarCobrancaContrato).
+    if (cobrancaMutation.isPending) return;
+    cobrancaMutation.mutate();
   }
 
   return (
@@ -127,7 +119,10 @@ function ContratoDetalhe() {
               </Link>
             </Button>
             <RoleGuard roles={["admin", "financeiro"]}>
-              <Button onClick={handleGerarCobranca} disabled={c.status !== "ativo"}>
+              <Button
+                onClick={handleGerarCobranca}
+                disabled={c.status !== "ativo" || cobrancaMutation.isPending}
+              >
                 <Receipt className="mr-2 h-4 w-4" /> Gerar cobrança do mês
               </Button>
             </RoleGuard>
@@ -143,13 +138,23 @@ function ContratoDetalhe() {
           <CardContent className="space-y-3 text-sm">
             <Field label="Status">
               <StatusBadge
-                label={c.status === "ativo" ? "Ativo" : c.status === "suspenso" ? "Suspenso" : "Encerrado"}
-                tone={c.status === "ativo" ? "success" : c.status === "suspenso" ? "warning" : "neutral"}
+                label={
+                  c.status === "ativo"
+                    ? "Ativo"
+                    : c.status === "suspenso"
+                      ? "Suspenso"
+                      : "Encerrado"
+                }
+                tone={
+                  c.status === "ativo" ? "success" : c.status === "suspenso" ? "warning" : "neutral"
+                }
               />
             </Field>
             <Field label="Modalidade">{modalidade?.nome ?? "—"}</Field>
             <Field label="Mensalidade">{formatBRL(c.valorMensal)}</Field>
-            <Field label="Periodicidade" className="capitalize">{c.periodicidade}</Field>
+            <Field label="Periodicidade" className="capitalize">
+              {c.periodicidade}
+            </Field>
             <Field label="Vigência">
               {formatDate(c.inicioVigencia)}
               {c.fimVigencia ? ` → ${formatDate(c.fimVigencia)}` : " → em vigência"}
@@ -175,7 +180,7 @@ function ContratoDetalhe() {
                   <div>
                     <p className="text-sm font-medium">{p.nome}</p>
                     <p className="text-xs text-muted-foreground">
-                      {findEspecie(p.especieId)?.nome} • {p.pesoKg} kg
+                      {especies.find((e) => e.id === p.especieId)?.nome} • {p.pesoKg} kg
                     </p>
                   </div>
                 </Link>
@@ -229,7 +234,9 @@ function ContratoDetalhe() {
                         </Link>
                       </TableCell>
                       <TableCell>{formatDate(par.vencimento)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatBRL(par.valor)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatBRL(par.valor)}
+                      </TableCell>
                       <TableCell>
                         <StatusBadge label={meta.label} tone={meta.tone} />
                       </TableCell>
@@ -249,7 +256,6 @@ function ContratoDetalhe() {
               )}
             </TableBody>
           </Table>
-          {/* TODO(api): gerar e atualizar cobranças via createServerFn. */}
         </CardContent>
       </Card>
     </>

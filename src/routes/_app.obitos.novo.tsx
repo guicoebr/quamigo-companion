@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Check, ChevronLeft, ChevronRight, PawPrint } from "lucide-react";
@@ -25,14 +25,8 @@ import { listTutores } from "@/lib/api/tutores.functions";
 import { listPets } from "@/lib/api/pets.functions";
 import { listEspecies, listModalidades } from "@/lib/api/lookups.functions";
 import { listServicosProdutos } from "@/lib/api/servicos-produtos.functions";
-import { useOSStore } from "@/store/osStore";
-import { useDataStore } from "@/store/dataStore";
-import { useAuthStore } from "@/store/authStore";
-import { ordensServicoMock } from "@/mocks/ordens_servico";
-import { pagamentosMock } from "@/mocks/pagamentos";
-import { nextOSNumber, nextPagamentoNumber, formatBRL, formatCPF, formatDate } from "@/lib/formatters";
-import type { OrdemServico, ItemOS } from "@/types/ordemServico";
-import type { Pagamento } from "@/types/pagamento";
+import { registrarObito } from "@/lib/api/ordens-servico.functions";
+import { formatBRL, formatCPF, formatDate } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/obitos/novo")({
   head: () => ({ meta: [{ title: "Registrar óbito — +QAmigo" }] }),
@@ -67,6 +61,7 @@ const servicosSchema = z.object({
 
 function RegistrarObitoPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
   const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: () => listPets() });
   const { data: especies = [] } = useQuery({
@@ -81,9 +76,6 @@ function RegistrarObitoPage() {
     queryKey: ["servicos-produtos"],
     queryFn: () => listServicosProdutos(),
   });
-  const addOS = useOSStore((s) => s.addOS);
-  const addPagamento = useDataStore((s) => s.addPagamento);
-  const user = useAuthStore((s) => s.user);
 
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -121,7 +113,13 @@ function RegistrarObitoPage() {
 
   function validate(current: number): boolean {
     const schema =
-      current === 1 ? tutorSchema : current === 2 ? petSchema : current === 3 ? servicosSchema : null;
+      current === 1
+        ? tutorSchema
+        : current === 2
+          ? petSchema
+          : current === 3
+            ? servicosSchema
+            : null;
     if (!schema) return true;
     const res = schema.safeParse(form);
     if (!res.success) {
@@ -142,75 +140,31 @@ function RegistrarObitoPage() {
     setStep((s) => Math.max(1, s - 1));
   }
 
+  const confirmarMutation = useMutation({
+    mutationFn: () =>
+      registrarObito({
+        data: {
+          tutorId: form.tutorId,
+          petId: form.petId,
+          modalidadeId: form.modalidadeId,
+          dataFalecimento: form.dataFalecimento,
+          itensIds: form.itensIds,
+          observacoes: form.observacoes || undefined,
+        },
+      }),
+    onSuccess: ({ os, numeroPagamento }) => {
+      queryClient.invalidateQueries({ queryKey: ["ordens-servico"] });
+      queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["pets"] });
+      toast.success(`Óbito registrado. ${os.numero} criada e pagamento ${numeroPagamento} gerado.`);
+      navigate({ to: "/ordens-servico/$id", params: { id: os.id } });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro ao registrar óbito."),
+  });
+
   function confirmar() {
     if (!validate(3)) return;
-    const numero = nextOSNumber([
-      ...ordensServicoMock.map((o) => o.numero),
-      ...useOSStore.getState().novas.map((o) => o.numero),
-    ]);
-    const agora = new Date().toISOString();
-    const itens: ItemOS[] = itensSelecionados.map((s, i) => ({
-      id: `i-${i + 1}`,
-      servicoProdutoId: s.id,
-      descricao: s.nome,
-      quantidade: 1,
-      precoUnitario: s.preco,
-    }));
-    const osId = `os-new-${Date.now()}`;
-    const pagamentoId = `pag-new-${Date.now()}`;
-    const numeroPag = nextPagamentoNumber([
-      ...pagamentosMock.map((p) => p.numero),
-      ...useDataStore.getState().pagamentosNovos.map((p) => p.numero),
-    ]);
-    const vencimento = new Date();
-    vencimento.setDate(vencimento.getDate() + 7);
-    const novoPagamento: Pagamento = {
-      id: pagamentoId,
-      numero: numeroPag,
-      origem: "ordem_servico",
-      ordemServicoId: osId,
-      tutorId: form.tutorId,
-      valorTotal: total,
-      status: "aberto",
-      parcelas: [
-        {
-          id: `par-${Date.now()}`,
-          numero: 1,
-          valor: total,
-          vencimento: vencimento.toISOString().slice(0, 10),
-          status: "pendente",
-        },
-      ],
-      criadoEm: agora,
-    };
-    const nova: OrdemServico = {
-      id: osId,
-      numero,
-      tutorId: form.tutorId,
-      petId: form.petId,
-      modalidadeId: form.modalidadeId,
-      status: "aguardando_coleta",
-      itens,
-      total,
-      pagamentoId,
-      dataFalecimento: form.dataFalecimento,
-      observacoes: form.observacoes || undefined,
-      historico: [
-        {
-          status: "aguardando_coleta",
-          ocorridoEm: agora,
-          usuarioId: user?.id ?? "u-system",
-          usuarioNome: user?.nome ?? "Sistema",
-        },
-      ],
-      criadoEm: agora,
-      atualizadoEm: agora,
-    };
-    addOS(nova);
-    addPagamento(novoPagamento);
-    toast.success(`Óbito registrado. ${numero} criada e pagamento ${numeroPag} gerado.`);
-    navigate({ to: "/ordens-servico" });
-    // TODO(api): substituir por createServerFn transacional (OS + óbito + pagamento).
+    confirmarMutation.mutate();
   }
 
   return (
@@ -271,9 +225,7 @@ function RegistrarObitoPage() {
                       onClick={() => setForm((f) => ({ ...f, tutorId: t.id, petId: "" }))}
                       className={cn(
                         "rounded-md border p-3 text-left transition-colors",
-                        sel
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:bg-muted",
+                        sel ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
                       )}
                     >
                       <p className="text-sm font-medium">{t.nome}</p>
@@ -295,12 +247,16 @@ function RegistrarObitoPage() {
           {step === 2 && (
             <div className="space-y-4">
               {!tutorSelecionado && (
-                <p className="text-sm text-muted-foreground">Selecione um tutor no passo anterior.</p>
+                <p className="text-sm text-muted-foreground">
+                  Selecione um tutor no passo anterior.
+                </p>
               )}
               {tutorSelecionado && (
                 <>
                   <div>
-                    <Label className="mb-2 block">Pet falecido — tutor: {tutorSelecionado.nome}</Label>
+                    <Label className="mb-2 block">
+                      Pet falecido — tutor: {tutorSelecionado.nome}
+                    </Label>
                     {petsDisponiveis.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         Este tutor não possui pets vivos cadastrados.
@@ -333,7 +289,9 @@ function RegistrarObitoPage() {
                         })}
                       </div>
                     )}
-                    {errors.petId && <p className="mt-2 text-sm text-destructive">{errors.petId}</p>}
+                    {errors.petId && (
+                      <p className="mt-2 text-sm text-destructive">{errors.petId}</p>
+                    )}
                   </div>
 
                   <div>
@@ -392,7 +350,9 @@ function RegistrarObitoPage() {
                           key={s.id}
                           className={cn(
                             "flex cursor-pointer items-center justify-between rounded-md border p-3 transition-colors",
-                            checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
+                            checked
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:bg-muted",
                           )}
                         >
                           <div className="flex items-center gap-3">
@@ -419,7 +379,9 @@ function RegistrarObitoPage() {
                       );
                     })}
                 </div>
-                {errors.itensIds && <p className="mt-2 text-sm text-destructive">{errors.itensIds}</p>}
+                {errors.itensIds && (
+                  <p className="mt-2 text-sm text-destructive">{errors.itensIds}</p>
+                )}
                 <div className="mt-3 flex items-center justify-end gap-3 border-t border-border pt-3 text-sm">
                   <span className="text-muted-foreground">Total estimado</span>
                   <span className="text-lg font-semibold tabular-nums">{formatBRL(total)}</span>
@@ -443,12 +405,13 @@ function RegistrarObitoPage() {
             <div className="space-y-4 text-sm">
               <Resumo
                 label="Tutor"
-                value={tutorSelecionado ? `${tutorSelecionado.nome} — ${formatCPF(tutorSelecionado.cpf)}` : "—"}
+                value={
+                  tutorSelecionado
+                    ? `${tutorSelecionado.nome} — ${formatCPF(tutorSelecionado.cpf)}`
+                    : "—"
+                }
               />
-              <Resumo
-                label="Pet"
-                value={pets.find((p) => p.id === form.petId)?.nome ?? "—"}
-              />
+              <Resumo label="Pet" value={pets.find((p) => p.id === form.petId)?.nome ?? "—"} />
               <Resumo label="Data do óbito" value={formatDate(form.dataFalecimento)} />
               <Resumo
                 label="Modalidade"
@@ -485,8 +448,9 @@ function RegistrarObitoPage() {
                 Avançar <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={confirmar}>
-                <Check className="mr-1 h-4 w-4" /> Confirmar registro
+              <Button onClick={confirmar} disabled={confirmarMutation.isPending}>
+                <Check className="mr-1 h-4 w-4" />
+                {confirmarMutation.isPending ? "Registrando..." : "Confirmar registro"}
               </Button>
             )}
           </div>
