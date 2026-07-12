@@ -6,6 +6,7 @@
  * Idempotente de forma grosseira: se o primeiro tutor demo já existe (por CPF),
  * assume que o seed já foi aplicado e não faz nada.
  */
+import bcrypt from "bcryptjs";
 import { getDataSource } from "../data-source";
 import {
   Tutor,
@@ -32,6 +33,22 @@ import { pagamentosMock } from "@/mocks/pagamentos";
 import { especiesMock, racasMock, modalidadesMock, servicosProdutosMock } from "@/mocks/lookups";
 
 const ds = await getDataSource();
+
+// --- Usuários demo extras (além dos 4 do seed base) — o histórico das OS demo
+// referencia "Bruno Carvalho". Idempotente por email, roda mesmo se o resto do
+// demo já foi aplicado. Senha "123456" como os demais.
+const usuariosDemo: Array<Pick<Usuario, "nome" | "email" | "role" | "ativo">> = [
+  { nome: "Bruno Carvalho", email: "bruno.carvalho@qamigo.com", role: "operacional", ativo: true },
+  { nome: "Camila Duarte", email: "camila.duarte@qamigo.com", role: "recepcao", ativo: false },
+];
+const usuarioRepo = ds.getRepository(Usuario);
+const senhaHashDemo = await bcrypt.hash("123456", 10);
+for (const u of usuariosDemo) {
+  const existente = await usuarioRepo.findOne({ where: { email: u.email } });
+  if (existente) continue;
+  await usuarioRepo.save(usuarioRepo.create({ ...u, senhaHash: senhaHashDemo }));
+}
+console.log(`Usuários demo: ${usuariosDemo.length}`);
 
 const jaExiste = await ds.getRepository(Tutor).findOne({ where: { cpf: tutoresMock[0].cpf } });
 if (jaExiste) {

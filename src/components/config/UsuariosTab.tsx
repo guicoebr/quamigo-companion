@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,36 +12,91 @@ import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/status/StatusBadge";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { useMockData } from "@/hooks/useMockData";
-import { useDataStore } from "@/store/dataStore";
-import { ROLE_LABEL, ALL_ROLES, type Role } from "@/types/auth";
+import { listUsuarios, createUsuario, updateUsuario } from "@/lib/api/usuarios.functions";
+import { ROLE_LABEL, ALL_ROLES, type Role, type UsuarioAdmin } from "@/types/auth";
 import { formatDate } from "@/lib/formatters";
-import type { UsuarioMock } from "@/mocks/usuarios";
 
 const schema = z.object({
   nome: z.string().min(2, "Nome obrigatório."),
   email: z.string().email("E-mail inválido."),
   role: z.enum(["admin", "operacional", "financeiro", "recepcao"]),
-  ativo: z.boolean(),
+  senha: z
+    .string()
+    .refine((v) => v === "" || v.length >= 6, { message: "Senha com pelo menos 6 caracteres." }),
 });
 type FormValues = z.infer<typeof schema>;
 
 export function UsuariosTab() {
-  const { usuarios } = useMockData();
-  const addUsuario = useDataStore((s) => s.addUsuario);
-  const updateUsuario = useDataStore((s) => s.updateUsuario);
+  const queryClient = useQueryClient();
+  const { data: usuarios = [] } = useQuery({
+    queryKey: ["usuarios"],
+    queryFn: () => listUsuarios(),
+  });
   const [busca, setBusca] = useState("");
   const [roleFiltro, setRoleFiltro] = useState<string>("todos");
-  const [editando, setEditando] = useState<UsuarioMock | null>(null);
+  const [editando, setEditando] = useState<UsuarioAdmin | null>(null);
   const [aberto, setAberto] = useState(false);
+
+  const invalidar = () => queryClient.invalidateQueries({ queryKey: ["usuarios"] });
+  const mensagemDe = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
+
+  const salvarMutation = useMutation({
+    mutationFn: (values: FormValues) => {
+      if (editando) {
+        return updateUsuario({
+          data: {
+            id: editando.id,
+            patch: {
+              nome: values.nome,
+              email: values.email,
+              role: values.role,
+              ...(values.senha && { novaSenha: values.senha }),
+            },
+          },
+        });
+      }
+      return createUsuario({
+        data: { nome: values.nome, email: values.email, role: values.role, senha: values.senha },
+      });
+    },
+    onSuccess: () => {
+      invalidar();
+      toast.success(editando ? "Usuário atualizado." : "Usuário criado.");
+      setAberto(false);
+    },
+    onError: (e) => toast.error(mensagemDe(e, "Erro ao salvar usuário.")),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (u: UsuarioAdmin) =>
+      updateUsuario({ data: { id: u.id, patch: { ativo: !u.ativo } } }),
+    onSuccess: (atualizado) => {
+      invalidar();
+      toast.success(atualizado.ativo ? "Usuário reativado." : "Usuário inativado.");
+    },
+    onError: (e) => toast.error(mensagemDe(e, "Erro ao alterar status.")),
+  });
 
   const filtrados = useMemo(() => {
     const t = busca.trim().toLowerCase();
@@ -51,28 +107,21 @@ export function UsuariosTab() {
     });
   }, [usuarios, busca, roleFiltro]);
 
-  function abrirNovo() { setEditando(null); setAberto(true); }
-  function abrirEditar(u: UsuarioMock) { setEditando(u); setAberto(true); }
-
-  function handleSubmit(values: FormValues) {
-    if (editando) {
-      updateUsuario(editando.id, values);
-      toast.success("Usuário atualizado.");
-    } else {
-      addUsuario({
-        id: `u-new-${Date.now()}`,
-        ...values,
-        criadoEm: new Date().toISOString(),
-      });
-      toast.success("Usuário criado.");
-    }
-    setAberto(false);
-    // TODO(api): CRUD via createServerFn + Supabase auth.users.
+  function abrirNovo() {
+    setEditando(null);
+    setAberto(true);
+  }
+  function abrirEditar(u: UsuarioAdmin) {
+    setEditando(u);
+    setAberto(true);
   }
 
-  function toggleAtivo(u: UsuarioMock) {
-    updateUsuario(u.id, { ativo: !u.ativo });
-    toast.success(u.ativo ? "Usuário inativado." : "Usuário reativado.");
+  function handleSubmit(values: FormValues) {
+    if (!editando && !values.senha) {
+      toast.error("Informe a senha do novo usuário.");
+      return;
+    }
+    salvarMutation.mutate(values);
   }
 
   return (
@@ -81,19 +130,30 @@ export function UsuariosTab() {
         <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome ou e-mail" className="pl-9" />
+            <Input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome ou e-mail"
+              className="pl-9"
+            />
           </div>
           <Select value={roleFiltro} onValueChange={setRoleFiltro}>
-            <SelectTrigger className="sm:w-52"><SelectValue placeholder="Papel" /></SelectTrigger>
+            <SelectTrigger className="sm:w-52">
+              <SelectValue placeholder="Papel" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os papéis</SelectItem>
               {ALL_ROLES.map((r) => (
-                <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                <SelectItem key={r} value={r}>
+                  {ROLE_LABEL[r]}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <RoleGuard permission="config.gerenciar">
-            <Button onClick={abrirNovo}><Plus className="mr-2 h-4 w-4" /> Novo usuário</Button>
+            <Button onClick={abrirNovo}>
+              <Plus className="mr-2 h-4 w-4" /> Novo usuário
+            </Button>
           </RoleGuard>
         </div>
 
@@ -115,16 +175,30 @@ export function UsuariosTab() {
                 <TableCell className="text-muted-foreground">{u.email}</TableCell>
                 <TableCell>{ROLE_LABEL[u.role as Role]}</TableCell>
                 <TableCell>
-                  <StatusBadge label={u.ativo ? "Ativo" : "Inativo"} tone={u.ativo ? "success" : "neutral"} />
+                  <StatusBadge
+                    label={u.ativo ? "Ativo" : "Inativo"}
+                    tone={u.ativo ? "success" : "neutral"}
+                  />
                 </TableCell>
                 <TableCell className="text-muted-foreground">{formatDate(u.criadoEm)}</TableCell>
                 <TableCell>
                   <RoleGuard permission="config.gerenciar">
                     <div className="flex items-center justify-end gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => abrirEditar(u)} aria-label="Editar">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => abrirEditar(u)}
+                        aria-label="Editar"
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => toggleAtivo(u)} aria-label={u.ativo ? "Inativar" : "Reativar"}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled={toggleMutation.isPending}
+                        onClick={() => toggleMutation.mutate(u)}
+                        aria-label={u.ativo ? "Inativar" : "Reativar"}
+                      >
                         <Power className="h-4 w-4" />
                       </Button>
                     </div>
@@ -143,29 +217,60 @@ export function UsuariosTab() {
         </Table>
       </CardContent>
 
-      <UsuarioDialog open={aberto} onOpenChange={setAberto} editando={editando} onSubmit={handleSubmit} />
+      <UsuarioDialog
+        open={aberto}
+        onOpenChange={setAberto}
+        editando={editando}
+        salvando={salvarMutation.isPending}
+        onSubmit={handleSubmit}
+      />
     </Card>
   );
 }
 
 function UsuarioDialog({
-  open, onOpenChange, editando, onSubmit,
+  open,
+  onOpenChange,
+  editando,
+  salvando,
+  onSubmit,
 }: {
-  open: boolean; onOpenChange: (v: boolean) => void;
-  editando: UsuarioMock | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  editando: UsuarioAdmin | null;
+  salvando: boolean;
   onSubmit: (v: FormValues) => void;
 }) {
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormValues>({
+  const defaults = (u: UsuarioAdmin | null): FormValues =>
+    u
+      ? { nome: u.nome, email: u.email, role: u.role, senha: "" }
+      : { nome: "", email: "", role: "operacional", senha: "" };
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: editando
-      ? { nome: editando.nome, email: editando.email, role: editando.role, ativo: editando.ativo }
-      : { nome: "", email: "", role: "operacional", ativo: true },
+    defaultValues: defaults(editando),
   });
 
+  // A abertura é programática (o Radix não dispara onOpenChange nesse caso),
+  // então o reset para os dados do usuário em edição precisa ser via efeito.
+  useEffect(() => {
+    if (open) reset(defaults(editando));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editando]);
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (v) reset(editando ? { nome: editando.nome, email: editando.email, role: editando.role, ativo: editando.ativo } : { nome: "", email: "", role: "operacional", ativo: true }); }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>{editando ? "Editar usuário" : "Novo usuário"}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{editando ? "Editar usuário" : "Novo usuário"}</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div>
             <Label className="text-xs">Nome*</Label>
@@ -179,18 +284,33 @@ function UsuarioDialog({
           </div>
           <div>
             <Label className="text-xs">Papel*</Label>
-            <Select defaultValue={watch("role")} onValueChange={(v) => setValue("role", v as Role)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select value={watch("role")} onValueChange={(v) => setValue("role", v as Role)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {ALL_ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                  <SelectItem key={r} value={r}>
+                    {ROLE_LABEL[r]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label className="text-xs">
+              {editando ? "Nova senha (deixe em branco para manter)" : "Senha*"}
+            </Label>
+            <Input type="password" autoComplete="new-password" {...register("senha")} />
+            {errors.senha && <p className="text-xs text-destructive">{errors.senha.message}</p>}
+          </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit">Salvar</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={salvando}>
+              {salvando ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

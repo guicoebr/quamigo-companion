@@ -22,6 +22,16 @@ export type User = {
   iniciais: string;
 };
 
+/** Usuário como visto pela tela de administração (nunca carrega senhaHash). */
+export type UsuarioAdmin = {
+  id: string;
+  nome: string;
+  email: string;
+  role: Role;
+  ativo: boolean;
+  criadoEm: string;
+};
+
 /** Ações granulares verificadas via hasPermission. */
 export type Permission =
   | "tutor.criar"
