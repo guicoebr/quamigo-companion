@@ -127,7 +127,7 @@ function TutoresPage() {
                       <TableCell className="tabular-nums">{formatCPF(t.cpf)}</TableCell>
                       <TableCell className="tabular-nums">{formatTelefone(t.telefone)}</TableCell>
                       <TableCell>
-                        {t.endereco.cidade} / {t.endereco.uf}
+                        {formatCidadeUf(t.endereco.cidade, t.endereco.uf)}
                       </TableCell>
                       <TableCell className="text-center">{petsDoEsteTutor.length}</TableCell>
                       <TableCell className="text-center">{oss.length}</TableCell>
