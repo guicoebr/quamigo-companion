@@ -38,6 +38,13 @@ export default defineConfig({
           find: "expo-sqlite",
           replacement: new URL("./src/server/stubs/expo-sqlite.ts", import.meta.url).pathname,
         },
+        {
+          // tinyglobby ships named-only ESM; TypeORM's CJS DirectoryExportedClassesLoader
+          // is bundled as `import def from "tinyglobby"` by Rollup, which fails since there
+          // is no default export. Alias to a shim that also provides a default.
+          find: /^tinyglobby$/,
+          replacement: new URL("./src/server/stubs/tinyglobby.mjs", import.meta.url).pathname,
+        },
       ],
     },
     ssr: {
