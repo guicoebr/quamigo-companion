@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { LogIn, PawPrint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,15 +27,6 @@ export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): LoginSearch => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
-  beforeLoad: async ({ search }) => {
-    if (typeof window === "undefined") return;
-    const store = useAuthStore.getState();
-    if (!store.hydrated) await store.hydrate();
-    const user = useAuthStore.getState().user;
-    if (user) {
-      throw redirect({ to: resolvePostLoginTarget(search.redirect, user.role) });
-    }
-  },
   head: () => ({ meta: [{ title: "Entrar — +QAmigo" }] }),
   component: LoginPage,
 });
@@ -45,11 +36,31 @@ function LoginPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const login = useAuthStore((s) => s.login);
+  const hydrate = useAuthStore((s) => s.hydrate);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const user = useAuthStore((s) => s.user);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!hydrated) {
+      void hydrate().catch(() => {
+        // Keep the login form usable when session restoration is unavailable.
+      });
+    }
+  }, [hydrate, hydrated]);
+
+  useEffect(() => {
+    if (hydrated && user) {
+      void navigate({
+        to: resolvePostLoginTarget(search.redirect, user.role),
+        replace: true,
+      });
+    }
+  }, [hydrated, navigate, search.redirect, user]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
