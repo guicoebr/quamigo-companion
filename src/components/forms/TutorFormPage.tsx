@@ -80,7 +80,16 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
   });
   if (mode === "editar" && !isLoading && !existing) throw notFound();
 
-  const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    getValues,
+    watch,
+    setFocus,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: existing
       ? {
@@ -102,6 +111,110 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
       : undefined,
     defaultValues: { contato1: "", nome: "" },
   });
+
+  // ===== ViaCEP: lookup automático de endereço =====
+  const abortRef = useRef<AbortController | null>(null);
+  const activeLookupCepRef = useRef<string | null>(null);
+  const hasHydratedExistingRef = useRef(mode === "novo");
+  const [cepStatus, setCepStatus] = useState<
+    "idle" | "loading" | "not_found" | "network_error"
+  >("idle");
+  const [lastLookedUpCep, setLastLookedUpCep] = useState<string | null>(null);
+
+  // Hidratação inicial (modo editar): registra o CEP salvo como já "consultado"
+  // para bloquear o disparo automático durante o load do tutor existente.
+  useEffect(() => {
+    if (hasHydratedExistingRef.current) return;
+    if (!existing) return;
+    const d = unformatCep(existing.endereco.cep);
+    if (d.length === 8) setLastLookedUpCep(d);
+    hasHydratedExistingRef.current = true;
+  }, [existing]);
+
+  // Cleanup ao desmontar: aborta qualquer requisição pendente.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  async function runLookup(cep8: string, opts: { force: boolean }) {
+    if (!hasHydratedExistingRef.current) return;
+    if (!opts.force && cepStatus === "loading") return;
+    if (!opts.force && cep8 === lastLookedUpCep) return;
+
+    // Cancela qualquer consulta anterior.
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    activeLookupCepRef.current = cep8;
+    setCepStatus("loading");
+
+    try {
+      const r = await fetchViaCep(cep8, ac.signal);
+      // Guard contra resposta obsoleta ou consulta cancelada.
+      if (abortRef.current !== ac || ac.signal.aborted) return;
+      if (r.status === "aborted") return;
+
+      if (r.status === "ok") {
+        if (r.logradouro)
+          setValue("logradouro", r.logradouro, { shouldDirty: true });
+        if (r.bairro) setValue("bairro", r.bairro, { shouldDirty: true });
+        if (r.cidade) setValue("cidade", r.cidade, { shouldDirty: true });
+        if (r.uf) setValue("uf", r.uf.toUpperCase(), { shouldDirty: true });
+        setLastLookedUpCep(cep8);
+        setCepStatus("idle");
+        setFocus("numero");
+      } else if (r.status === "not_found") {
+        setLastLookedUpCep(cep8);
+        setCepStatus("not_found");
+      } else {
+        // erro real (timeout/rede/HTTP inválido) — não fixa lastLookedUpCep,
+        // permitindo retry pelo botão "Buscar novamente".
+        setCepStatus("network_error");
+      }
+    } finally {
+      if (abortRef.current === ac) {
+        abortRef.current = null;
+        activeLookupCepRef.current = null;
+      }
+    }
+  }
+
+  // Observa mudanças no CEP: dispara consulta ao completar 8 dígitos e cancela
+  // consultas em andamento quando o valor difere do que está sendo consultado.
+  const cepValue = watch("cep");
+  useEffect(() => {
+    if (!hasHydratedExistingRef.current) return;
+    const d = unformatCep(cepValue ?? "");
+
+    // Se há uma consulta em andamento para outro CEP, cancela imediatamente.
+    if (
+      activeLookupCepRef.current !== null &&
+      d !== activeLookupCepRef.current
+    ) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      activeLookupCepRef.current = null;
+      setCepStatus("idle");
+    }
+
+    if (d.length === 8) {
+      if (d !== lastLookedUpCep && cepStatus !== "loading") {
+        void runLookup(d, { force: false });
+      }
+    } else {
+      // Menos de 8 dígitos: limpa mensagens antigas mas mantém campos preenchidos.
+      if (lastLookedUpCep !== null && d !== lastLookedUpCep) {
+        setLastLookedUpCep(null);
+      }
+      if (cepStatus === "not_found" || cepStatus === "network_error") {
+        setCepStatus("idle");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cepValue]);
+
 
   async function onSubmit(values: FormValues) {
     const endereco = {
