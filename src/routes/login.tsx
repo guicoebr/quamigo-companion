@@ -12,7 +12,6 @@ import { brand } from "@/design/brand";
 type LoginSearch = { redirect?: string };
 
 export const Route = createFileRoute("/login")({
-  ssr: false,
   validateSearch: (search: Record<string, unknown>): LoginSearch => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
