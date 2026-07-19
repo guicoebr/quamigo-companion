@@ -11,6 +11,18 @@ import { brand } from "@/design/brand";
 
 type LoginSearch = { redirect?: string };
 
+const NON_DESTINATIONS = new Set(["/", "/login", "/brand-book"]);
+
+function resolvePostLoginTarget(
+  redirectTo: string | undefined,
+  role: Parameters<typeof defaultRouteForRole>[0],
+): string {
+  if (!redirectTo) return defaultRouteForRole(role);
+  const path = redirectTo.split("?")[0].split("#")[0];
+  if (NON_DESTINATIONS.has(path)) return defaultRouteForRole(role);
+  return redirectTo;
+}
+
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): LoginSearch => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
@@ -21,12 +33,13 @@ export const Route = createFileRoute("/login")({
     if (!store.hydrated) await store.hydrate();
     const user = useAuthStore.getState().user;
     if (user) {
-      throw redirect({ to: search.redirect ?? defaultRouteForRole(user.role) });
+      throw redirect({ to: resolvePostLoginTarget(search.redirect, user.role) });
     }
   },
   head: () => ({ meta: [{ title: "Entrar — +QAmigo" }] }),
   component: LoginPage,
 });
+
 
 function LoginPage() {
   const navigate = useNavigate();
