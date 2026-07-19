@@ -11,6 +11,7 @@ import {
   unformatPhone,
   formatCep,
   unformatCep,
+  isValidCep,
 } from "@/lib/formatters";
 import { fetchViaCep } from "@/lib/viacep";
 import { useQuery } from "@tanstack/react-query";
