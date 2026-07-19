@@ -78,39 +78,55 @@ function PetsPage() {
 
       <Card className="rounded-[12px]">
         <CardContent className="p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por pet ou tutor"
-                className="pl-9"
-              />
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="pets-busca" className="text-xs font-medium text-muted-foreground">
+                Busca
+              </Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="pets-busca"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar por pet ou tutor"
+                  className="pl-9"
+                />
+              </div>
             </div>
-            <Select value={especieId} onValueChange={setEspecieId}>
-              <SelectTrigger className="sm:w-48">
-                <SelectValue placeholder="Espécie" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as espécies</SelectItem>
-                {especies.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={situacao} onValueChange={(v) => setSituacao(v as typeof situacao)}>
-              <SelectTrigger className="sm:w-44">
-                <SelectValue placeholder="Situação" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="vivos">Vivos</SelectItem>
-                <SelectItem value="falecidos">Falecidos</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-1 sm:w-48">
+              <Label htmlFor="pets-especie" className="text-xs font-medium text-muted-foreground">
+                Espécie
+              </Label>
+              <Select value={especieId} onValueChange={setEspecieId}>
+                <SelectTrigger id="pets-especie">
+                  <SelectValue placeholder="Espécie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as espécies</SelectItem>
+                  {especies.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 sm:w-44">
+              <Label htmlFor="pets-situacao" className="text-xs font-medium text-muted-foreground">
+                Situação
+              </Label>
+              <Select value={situacao} onValueChange={(v) => setSituacao(v as typeof situacao)}>
+                <SelectTrigger id="pets-situacao">
+                  <SelectValue placeholder="Situação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as situações</SelectItem>
+                  <SelectItem value="vivos">Vivos</SelectItem>
+                  <SelectItem value="falecidos">Falecidos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
