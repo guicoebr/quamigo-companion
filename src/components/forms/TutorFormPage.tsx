@@ -308,13 +308,44 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               />
             </Field>
             <Field label="CEP" error={errors.cep?.message}>
-              <MaskedInput
-                control={control}
-                name="cep"
-                mask={formatCep}
-                placeholder="00000-000"
-                inputMode="numeric"
-              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <MaskedInput
+                    control={control}
+                    name="cep"
+                    mask={formatCep}
+                    placeholder="00000-000"
+                    inputMode="numeric"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={unformatCep(cepValue ?? "").length !== 8}
+                  onClick={() =>
+                    void runLookup(unformatCep(getValues("cep") ?? ""), {
+                      force: true,
+                    })
+                  }
+                >
+                  <Search className="mr-1.5 h-3.5 w-3.5" />
+                  {cepStatus === "loading" ? "Buscar novamente" : "Buscar CEP"}
+                </Button>
+              </div>
+              {cepStatus === "loading" && (
+                <p className="text-xs text-muted-foreground">Buscando endereço…</p>
+              )}
+              {cepStatus === "not_found" && (
+                <p className="text-xs text-destructive">
+                  CEP não encontrado. Verifique os números informados ou preencha o endereço manualmente.
+                </p>
+              )}
+              {cepStatus === "network_error" && (
+                <p className="text-xs text-destructive">
+                  Não foi possível consultar o CEP agora. Preencha o endereço manualmente ou tente novamente.
+                </p>
+              )}
             </Field>
             <Field label="Endereço" error={errors.logradouro?.message}>
               <Input {...register("logradouro")} />
