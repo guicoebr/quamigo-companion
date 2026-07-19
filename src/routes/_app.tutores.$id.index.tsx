@@ -103,7 +103,7 @@ function TutorDetalhe() {
                   {tutor.endereco.complemento ? ` — ${tutor.endereco.complemento}` : ""}
                 </p>
                 <p className="text-muted-foreground">
-                  {tutor.endereco.bairro} • {tutor.endereco.cidade}/{tutor.endereco.uf}
+                  {tutor.endereco.bairro} • {formatCidadeUf(tutor.endereco.cidade, tutor.endereco.uf)}
                 </p>
                 <p className="text-muted-foreground">CEP {formatCEP(tutor.endereco.cep)}</p>
               </div>
