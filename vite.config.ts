@@ -23,11 +23,22 @@ export default defineConfig({
   },
   vite: {
     resolve: {
-      alias: {
-        // TypeORM's ESM build unconditionally imports "expo-sqlite" (its React Native driver).
-        // Alias it to a no-op stub so the SSR bundle can load without a real Expo dependency.
-        "expo-sqlite": new URL("./src/server/stubs/expo-sqlite.ts", import.meta.url).pathname,
-      },
+      alias: [
+        {
+          // Nitro's Worker build has no matching condition for TypeORM's package root
+          // (which only exposes node/browser/react-native entries). Resolve only the exact
+          // root import to its ESM entry; subpaths such as typeorm/util/StringUtils must keep
+          // using TypeORM's own exports map for typeorm-naming-strategies.
+          find: /^typeorm$/,
+          replacement: new URL("./node_modules/typeorm/index.mjs", import.meta.url).pathname,
+        },
+        {
+          // TypeORM's ESM build unconditionally imports "expo-sqlite" (its React Native driver).
+          // Alias it to a no-op stub so the SSR bundle can load without a real Expo dependency.
+          find: "expo-sqlite",
+          replacement: new URL("./src/server/stubs/expo-sqlite.ts", import.meta.url).pathname,
+        },
+      ],
     },
     ssr: {
       resolve: {
