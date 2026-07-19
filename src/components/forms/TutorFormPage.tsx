@@ -65,15 +65,15 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
   });
   if (mode === "editar" && !isLoading && !existing) throw notFound();
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: existing
       ? {
           nome: existing.nome,
-          cpf: existing.cpf,
+          cpf: formatCpf(existing.cpf),
           rne: "",
           email: existing.email,
-          contato1: existing.telefone,
+          contato1: formatPhone(existing.telefone),
           contato2: "",
           contato3: "",
           cep: existing.endereco.cep,
