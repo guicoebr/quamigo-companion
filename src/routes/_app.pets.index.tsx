@@ -78,7 +78,11 @@ function PetsPage() {
 
       <Card className="rounded-[12px]">
         <CardContent className="p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Filtros
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
               <Label htmlFor="pets-busca" className="text-xs font-medium text-muted-foreground">
                 Busca
@@ -127,7 +131,9 @@ function PetsPage() {
                 </SelectContent>
               </Select>
             </div>
+            </div>
           </div>
+
 
           <div className="overflow-x-auto">
             <Table>

@@ -24,6 +24,48 @@ import { listTutores } from "@/lib/api/tutores.functions";
 import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
 import { cn } from "@/lib/utils";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+function calcularIdadeAnos(
+  dataISO: string | null | undefined,
+): number | null {
+  if (!dataISO) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dataISO);
+  if (!match) return null;
+  const ano = Number(match[1]);
+  const mes = Number(match[2]);
+  const dia = Number(match[3]);
+  if (
+    !Number.isInteger(ano) ||
+    !Number.isInteger(mes) ||
+    !Number.isInteger(dia) ||
+    mes < 1 ||
+    mes > 12 ||
+    dia < 1
+  ) {
+    return null;
+  }
+  const diasNoMes = new Date(ano, mes, 0).getDate();
+  if (dia > diasNoMes) return null;
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = hoje.getMonth() + 1;
+  const diaAtual = hoje.getDate();
+  let idade = anoAtual - ano;
+  if (mesAtual < mes || (mesAtual === mes && diaAtual < dia)) {
+    idade -= 1;
+  }
+  return idade;
+}
 
 const schema = z.object({
   tutorId: z.string().min(1, "Selecione o tutor responsável."),
@@ -150,8 +192,13 @@ function NovoPetPage() {
     .map((field) => LABELS[field])
     .filter((label): label is string => Boolean(label));
 
-  async function onValid(values: FormValues) {
+  const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
+  const [isPersisting, setIsPersisting] = useState(false);
+
+  async function persistirPet(values: FormValues) {
+    if (isPersisting) return;
     try {
+      setIsPersisting(true);
       const novo = await createPet({
         data: {
           tutorId: values.tutorId,
@@ -170,7 +217,18 @@ function NovoPetPage() {
       navigate({ to: "/pets/$id", params: { id: novo.id } });
     } catch {
       toast.error("Não foi possível cadastrar o pet.");
+    } finally {
+      setIsPersisting(false);
     }
+  }
+
+  async function onValid(values: FormValues) {
+    const idade = calcularIdadeAnos(values.dataNascimento);
+    if (idade !== null && idade > 20) {
+      setPendingValues(values);
+      return;
+    }
+    await persistirPet(values);
   }
 
   function onInvalid() {
@@ -387,13 +445,49 @@ function NovoPetPage() {
               </Field>
             </div>
             <div className="md:col-span-2 flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isPersisting}>
                 <Save className="mr-2 h-4 w-4" /> Salvar
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={pendingValues !== null}
+        onOpenChange={(open) => {
+          if (!open && !isPersisting) {
+            setPendingValues(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar data de nascimento</AlertDialogTitle>
+            <AlertDialogDescription>
+              A data informada indica que o pet possui mais de 20 anos. Deseja continuar mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPersisting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isPersisting || !pendingValues}
+              onClick={async (event) => {
+                event.preventDefault();
+                if (!pendingValues || isPersisting) return;
+                const valuesToPersist = pendingValues;
+                try {
+                  await persistirPet(valuesToPersist);
+                } finally {
+                  setPendingValues(null);
+                }
+              }}
+            >
+              {isPersisting ? "Salvando..." : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
