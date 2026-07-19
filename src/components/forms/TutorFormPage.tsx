@@ -373,7 +373,7 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
             <Field label="Endereço" error={errors.logradouro?.message}>
               <Input {...register("logradouro")} />
             </Field>
-            <Field label="Número" error={errors.numero?.message}>
+            <Field label="Número *" error={errors.numero?.message}>
               <Input {...register("numero")} />
             </Field>
             <Field label="Bairro" error={errors.bairro?.message}>
