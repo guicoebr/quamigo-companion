@@ -22,14 +22,23 @@ import { getTutor, createTutor, updateTutor } from "@/lib/api/tutores.functions"
 
 const schema = z.object({
   nome: z.string().min(2, "Nome obrigatório."),
-  cpf: z.string().optional().or(z.literal("")),
+  cpf: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => {
+      const d = unformatCpf(v ?? "");
+      return d.length < 11 || isValidCpf(d);
+    }, { message: "CPF inválido. Verifique os números informados." }),
   rne: z.string().optional().or(z.literal("")),
   email: z
     .string()
     .optional()
     .or(z.literal(""))
     .refine((v) => !v || /\S+@\S+\.\S+/.test(v), { message: "E-mail inválido." }),
-  contato1: z.string().min(1, "Informe ao menos um contato."),
+  contato1: z
+    .string()
+    .refine((v) => unformatPhone(v).length >= 10, { message: "Informe ao menos um contato." }),
   contato2: z.string().optional().or(z.literal("")),
   contato3: z.string().optional().or(z.literal("")),
   cep: z.string().optional().or(z.literal("")),
