@@ -35,7 +35,6 @@ export default defineConfig({
         conditions: ["node", "import", "module", "default"],
         externalConditions: ["node", "import", "module", "default"],
       },
-      noExternal: ["typeorm"],
     },
   },
 });
