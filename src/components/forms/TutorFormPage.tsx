@@ -140,7 +140,13 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               <Input {...register("nome")} />
             </Field>
             <Field label="CPF" error={errors.cpf?.message}>
-              <Input {...register("cpf")} placeholder="000.000.000-00" />
+              <MaskedInput
+                control={control}
+                name="cpf"
+                mask={formatCpf}
+                placeholder="000.000.000-00"
+                inputMode="numeric"
+              />
             </Field>
             <Field label="RNE" error={errors.rne?.message}>
               <Input {...register("rne")} />
@@ -149,13 +155,29 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               <Input type="email" {...register("email")} />
             </Field>
             <Field label="Contato 1*" error={errors.contato1?.message}>
-              <Input {...register("contato1")} placeholder="(11) 99999-0000" />
+              <MaskedInput
+                control={control}
+                name="contato1"
+                mask={formatPhone}
+                placeholder="(11) 99999-0000"
+                inputMode="tel"
+              />
             </Field>
             <Field label="Contato 2" error={errors.contato2?.message}>
-              <Input {...register("contato2")} />
+              <MaskedInput
+                control={control}
+                name="contato2"
+                mask={formatPhone}
+                inputMode="tel"
+              />
             </Field>
             <Field label="Contato 3" error={errors.contato3?.message}>
-              <Input {...register("contato3")} />
+              <MaskedInput
+                control={control}
+                name="contato3"
+                mask={formatPhone}
+                inputMode="tel"
+              />
             </Field>
             <Field label="CEP" error={errors.cep?.message}>
               <Input {...register("cep")} placeholder="00000-000" />
