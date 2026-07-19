@@ -88,11 +88,17 @@ function RegistrarObitoPage() {
     observacoes: "",
   });
   const [buscaTutor, setBuscaTutor] = useState("");
+  const tutorAreaRef = useRef<HTMLDivElement | null>(null);
+  const petAreaRef = useRef<HTMLDivElement | null>(null);
 
   const tutorSelecionado = tutores.find((t) => t.id === form.tutorId);
-  const petsDisponiveis = useMemo(
-    () => pets.filter((p) => p.tutorId === form.tutorId && !p.dataFalecimento),
+  const petsDoTutor = useMemo(
+    () => pets.filter((p) => p.tutorId === form.tutorId),
     [pets, form.tutorId],
+  );
+  const petsDisponiveis = useMemo(
+    () => petsDoTutor.filter((p) => !p.dataFalecimento),
+    [petsDoTutor],
   );
   const itensSelecionados = useMemo(
     () => servicosProdutos.filter((s) => form.itensIds.includes(s.id)),
