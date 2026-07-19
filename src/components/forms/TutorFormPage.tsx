@@ -99,9 +99,9 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
     };
     const payload = {
       nome: values.nome,
-      cpf: values.cpf ?? "",
+      cpf: unformatCpf(values.cpf ?? ""),
       email: values.email ?? "",
-      telefone: values.contato1,
+      telefone: unformatPhone(values.contato1),
       endereco,
       observacoes: values.observacoes || undefined,
     };
