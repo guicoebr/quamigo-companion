@@ -1,7 +1,14 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller, type Control, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import {
+  formatCpf,
+  unformatCpf,
+  isValidCpf,
+  formatPhone,
+  unformatPhone,
+} from "@/lib/formatters";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Save } from "lucide-react";
