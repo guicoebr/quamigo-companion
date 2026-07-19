@@ -8,6 +8,9 @@ import {
   isValidCpf,
   formatPhone,
   unformatPhone,
+  formatCep,
+  unformatCep,
+  isValidCep,
 } from "@/lib/formatters";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
@@ -41,7 +44,17 @@ const schema = z.object({
     .refine((v) => unformatPhone(v).length >= 10, { message: "Informe ao menos um contato." }),
   contato2: z.string().optional().or(z.literal("")),
   contato3: z.string().optional().or(z.literal("")),
-  cep: z.string().optional().or(z.literal("")),
+  cep: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (v) => {
+        const d = unformatCep(v ?? "");
+        return d.length === 0 || isValidCep(d);
+      },
+      { message: "CEP inválido. Informe os 8 dígitos." },
+    ),
   logradouro: z.string().optional().or(z.literal("")),
   numero: z.string().optional().or(z.literal("")),
   bairro: z.string().optional().or(z.literal("")),
@@ -76,7 +89,7 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
           contato1: formatPhone(existing.telefone),
           contato2: "",
           contato3: "",
-          cep: existing.endereco.cep,
+          cep: formatCep(existing.endereco.cep),
           logradouro: existing.endereco.logradouro,
           numero: existing.endereco.numero,
           bairro: existing.endereco.bairro,
@@ -90,7 +103,7 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
 
   async function onSubmit(values: FormValues) {
     const endereco = {
-      cep: (values.cep ?? "").replace(/\D/g, ""),
+      cep: unformatCep(values.cep ?? ""),
       logradouro: values.logradouro ?? "",
       numero: values.numero ?? "",
       bairro: values.bairro ?? "",
@@ -180,7 +193,13 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               />
             </Field>
             <Field label="CEP" error={errors.cep?.message}>
-              <Input {...register("cep")} placeholder="00000-000" />
+              <MaskedInput
+                control={control}
+                name="cep"
+                mask={formatCep}
+                placeholder="00000-000"
+                inputMode="numeric"
+              />
             </Field>
             <Field label="Endereço" error={errors.logradouro?.message}>
               <Input {...register("logradouro")} />
