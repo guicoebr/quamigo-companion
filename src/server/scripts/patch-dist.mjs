@@ -30,7 +30,16 @@ const fixes = [
   },
 ];
 
-let contents = await readFile(target, "utf8");
+let contents;
+try {
+  contents = await readFile(target, "utf8");
+} catch (err) {
+  if (err?.code === "ENOENT") {
+    console.log(`patch-dist: "${target}" não existe — pulando (nada a corrigir).`);
+    process.exit(0);
+  }
+  throw err;
+}
 let patched = 0;
 for (const { broken, fixed } of fixes) {
   if (contents.includes(broken)) {
