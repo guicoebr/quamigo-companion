@@ -159,39 +159,55 @@ function PagamentosPage() {
 
       <Card className="rounded-[12px]">
         <CardContent className="p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por número ou tutor"
-                className="pl-9"
-              />
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="pag-busca" className="text-xs font-medium text-muted-foreground">
+                Busca
+              </Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="pag-busca"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar por número ou tutor"
+                  className="pl-9"
+                />
+              </div>
             </div>
-            <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-              <SelectTrigger className="sm:w-48">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os status</SelectItem>
-                {Object.entries(STATUS_PAG_LABEL).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>
-                    {v.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={origemFiltro} onValueChange={setOrigemFiltro}>
-              <SelectTrigger className="sm:w-48">
-                <SelectValue placeholder="Origem" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as origens</SelectItem>
-                <SelectItem value="ordem_servico">Ordem de serviço</SelectItem>
-                <SelectItem value="contrato">Contrato</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-1 sm:w-48">
+              <Label htmlFor="pag-status" className="text-xs font-medium text-muted-foreground">
+                Status
+              </Label>
+              <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+                <SelectTrigger id="pag-status">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  {Object.entries(STATUS_PAG_LABEL).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>
+                      {v.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 sm:w-48">
+              <Label htmlFor="pag-origem" className="text-xs font-medium text-muted-foreground">
+                Origem
+              </Label>
+              <Select value={origemFiltro} onValueChange={setOrigemFiltro}>
+                <SelectTrigger id="pag-origem">
+                  <SelectValue placeholder="Origem" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as origens</SelectItem>
+                  <SelectItem value="ordem_servico">Ordem de serviço</SelectItem>
+                  <SelectItem value="contrato">Contrato</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
