@@ -222,7 +222,7 @@ function RegistrarObitoPage() {
       <Card className="rounded-[12px]">
         <CardContent className="p-6">
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-4" ref={tutorAreaRef}>
               <Label>Buscar tutor</Label>
               <Input
                 value={buscaTutor}
@@ -236,7 +236,13 @@ function RegistrarObitoPage() {
                     <button
                       type="button"
                       key={t.id}
-                      onClick={() => setForm((f) => ({ ...f, tutorId: t.id, petId: "" }))}
+                      onClick={() => {
+                        setForm((f) => ({ ...f, tutorId: t.id, petId: "" }));
+                        setErrors((prev) => {
+                          const { tutorId: _t, petId: _p, ...rest } = prev;
+                          return rest;
+                        });
+                      }}
                       className={cn(
                         "rounded-md border p-3 text-left transition-colors",
                         sel ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
@@ -253,7 +259,11 @@ function RegistrarObitoPage() {
                   <p className="text-sm text-muted-foreground">Nenhum tutor encontrado.</p>
                 )}
               </div>
-              {errors.tutorId && <p className="text-sm text-destructive">{errors.tutorId}</p>}
+              {errors.tutorId && (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.tutorId}
+                </p>
+              )}
               {/* TODO(api): formulário "Novo tutor" + busca no backend. */}
             </div>
           )}
