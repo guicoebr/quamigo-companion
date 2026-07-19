@@ -193,7 +193,13 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               />
             </Field>
             <Field label="CEP" error={errors.cep?.message}>
-              <Input {...register("cep")} placeholder="00000-000" />
+              <MaskedInput
+                control={control}
+                name="cep"
+                mask={formatCep}
+                placeholder="00000-000"
+                inputMode="numeric"
+              />
             </Field>
             <Field label="Endereço" error={errors.logradouro?.message}>
               <Input {...register("logradouro")} />
