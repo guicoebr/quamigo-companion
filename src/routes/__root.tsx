@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { useAuthStore } from "@/store/authStore";
 
 function NotFoundComponent() {
   return (
@@ -36,11 +37,33 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
+  const isExpiredSession = error.message === "Não autenticado.";
+
   useEffect(() => {
+    if (isExpiredSession) {
+      useAuthStore.setState({ user: null, hydrated: true });
+      void router.navigate({
+        to: "/login",
+        search: {
+          redirect: typeof window === "undefined" ? undefined : window.location.pathname,
+        },
+        replace: true,
+      });
+      return;
+    }
+
+    console.error(error);
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+  }, [error, isExpiredSession, router]);
+
+  if (isExpiredSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <p className="text-sm text-muted-foreground">Sua sessão expirou. Redirecionando…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">

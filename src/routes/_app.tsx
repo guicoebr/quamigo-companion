@@ -14,14 +14,17 @@ import { canAccessRoute } from "@/lib/permissions";
  *    via requireAuth()/requirePermission(), ver src/server/session.server.ts)
  *
  * `ssr: false` evita tentar validar sessão durante SSR; a hidratação acontece no
- * client via `hydrate()` antes de decidir o redirect.
+  * client via `hydrate()` antes de decidir o redirect.
  */
 export const Route = createFileRoute("/_app")({
   ssr: false,
   beforeLoad: async ({ location }) => {
     if (typeof window === "undefined") return;
     const store = useAuthStore.getState();
-    if (!store.hydrated) await store.hydrate();
+    // Revalida o cookie no servidor em toda navegação. O estado Zustand pode
+    // continuar com um usuário antigo depois que a sessão expira ou é perdida;
+    // confiar apenas em `hydrated` deixaria a página disparar queries protegidas.
+    await store.hydrate();
     const user = useAuthStore.getState().user;
     if (!user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
