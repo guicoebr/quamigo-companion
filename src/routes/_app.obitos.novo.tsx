@@ -139,7 +139,15 @@ function RegistrarObitoPage() {
   }
 
   function next() {
-    if (validate(step)) setStep((s) => Math.min(4, s + 1));
+    const currentStep = step;
+    if (validate(currentStep)) {
+      setStep((s) => Math.min(4, s + 1));
+    } else {
+      requestAnimationFrame(() => {
+        const target = currentStep === 1 ? tutorAreaRef.current : currentStep === 2 ? petAreaRef.current : null;
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
   }
   function back() {
     setErrors({});
