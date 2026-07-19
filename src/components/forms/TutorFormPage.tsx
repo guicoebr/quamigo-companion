@@ -391,13 +391,42 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               </Field>
             </div>
             <div className="md:col-span-2 flex justify-end gap-2">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || createdTutorId !== null}>
                 <Save className="mr-2 h-4 w-4" /> Salvar
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      {mode === "novo" && (
+        <Dialog
+          open={Boolean(createdTutorId)}
+          onOpenChange={(open) => {
+            if (open || !createdTutorId) return;
+            if (actionNavigationRef.current) return;
+            actionNavigationRef.current = true;
+            navigate({ to: "/tutores/$id", params: { id: createdTutorId } });
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Tutor cadastrado com sucesso.</DialogTitle>
+              <DialogDescription>
+                O que você deseja fazer agora?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button type="button" variant="outline" onClick={handleVerTutor}>
+                Ver tutor
+              </Button>
+              <Button type="button" onClick={handleCadastrarPet}>
+                Cadastrar pet deste tutor
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
