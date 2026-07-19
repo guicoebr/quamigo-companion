@@ -233,6 +233,11 @@ function NovoPetPage() {
                 aria-describedby={errors.tutorId ? "tutorId-error" : undefined}
               />
             </div>
+            {preselectFailed && (
+              <p className="text-xs text-muted-foreground">
+                Não foi possível pré-selecionar o tutor informado.
+              </p>
+            )}
             <div className="grid gap-2 sm:grid-cols-2">
               {tutoresFiltrados.map((t) => {
                 const sel = tutorId === t.id;
@@ -240,7 +245,10 @@ function NovoPetPage() {
                   <button
                     type="button"
                     key={t.id}
-                    onClick={() => setValue("tutorId", t.id, { shouldValidate: true })}
+                    onClick={() => {
+                      setValue("tutorId", t.id, { shouldValidate: true });
+                      setPreselectFailed(false);
+                    }}
                     className={cn(
                       "rounded-md border p-3 text-left transition-colors",
                       sel ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
