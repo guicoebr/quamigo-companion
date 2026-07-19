@@ -49,6 +49,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           redirect: typeof window === "undefined" ? undefined : window.location.pathname,
         },
         replace: true,
+        reloadDocument: true,
       });
       return;
     }

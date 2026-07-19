@@ -27,7 +27,11 @@ export const Route = createFileRoute("/_app")({
     await store.hydrate();
     const user = useAuthStore.getState().user;
     if (!user) {
-      throw redirect({ to: "/login", search: { redirect: location.href } });
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+        reloadDocument: true,
+      });
     }
     if (!canAccessRoute(location.pathname, user.role)) {
       throw redirect({ to: "/unauthorized" });
