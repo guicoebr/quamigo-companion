@@ -5,6 +5,8 @@ import {
   useSession as getSessionManager,
   getSession,
   clearSession,
+  getRequest,
+  getRequestHeader,
 } from "@tanstack/react-start/server";
 import type { SessionConfig } from "@tanstack/react-start/server";
 
@@ -16,14 +18,21 @@ type QamigoSessionData = { userId: string };
 function sessionConfig(): SessionConfig {
   const password = process.env.SESSION_SECRET;
   if (!password) throw new Error("SESSION_SECRET não configurada.");
+  const forwardedProtocol = getRequestHeader("x-forwarded-proto")?.split(",")[0]?.trim();
+  const isHttps = forwardedProtocol === "https" || new URL(getRequest().url).protocol === "https:";
+
   return {
     password,
     name: "qamigo_session",
     maxAge: 60 * 60 * 8, // 8h
     cookie: {
       httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      // The Lovable preview runs inside a cross-site iframe. HTTPS sessions
+      // therefore need SameSite=None and a partitioned cookie to survive the
+      // login response and accompany subsequent server-function requests.
+      sameSite: isHttps ? "none" : "lax",
+      secure: isHttps,
+      partitioned: isHttps,
       path: "/",
     },
   };
