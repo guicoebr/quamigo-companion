@@ -224,5 +224,33 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
+type MaskedInputProps = {
+  control: Control<FormValues>;
+  name: FieldPath<FormValues>;
+  mask: (v: string) => string;
+  placeholder?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+};
+
+function MaskedInput({ control, name, mask, placeholder, inputMode }: MaskedInputProps) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <Input
+          value={mask(field.value ?? "")}
+          onChange={(e) => field.onChange(mask(e.target.value))}
+          onBlur={field.onBlur}
+          name={field.name}
+          ref={field.ref}
+          placeholder={placeholder}
+          inputMode={inputMode}
+        />
+      )}
+    />
+  );
+}
+
 // Re-export para reaproveitar `createFileRoute` por consumidores se necessário.
 export { createFileRoute };
