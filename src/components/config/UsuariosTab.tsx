@@ -127,31 +127,42 @@ export function UsuariosTab() {
   return (
     <Card className="rounded-[12px]">
       <CardContent className="p-4">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por nome ou e-mail"
-              className="pl-9"
-            />
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1 space-y-1">
+            <Label htmlFor="usu-busca" className="text-xs font-medium text-muted-foreground">
+              Busca
+            </Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="usu-busca"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por nome ou e-mail"
+                className="pl-9"
+              />
+            </div>
           </div>
-          <Select value={roleFiltro} onValueChange={setRoleFiltro}>
-            <SelectTrigger className="sm:w-52">
-              <SelectValue placeholder="Papel" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os papéis</SelectItem>
-              {ALL_ROLES.map((r) => (
-                <SelectItem key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-1 sm:w-52">
+            <Label htmlFor="usu-papel" className="text-xs font-medium text-muted-foreground">
+              Papel
+            </Label>
+            <Select value={roleFiltro} onValueChange={setRoleFiltro}>
+              <SelectTrigger id="usu-papel">
+                <SelectValue placeholder="Papel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os papéis</SelectItem>
+                {ALL_ROLES.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {ROLE_LABEL[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <RoleGuard permission="config.gerenciar">
-            <Button onClick={abrirNovo}>
+            <Button className="sm:self-end" onClick={abrirNovo}>
               <Plus className="mr-2 h-4 w-4" /> Novo usuário
             </Button>
           </RoleGuard>
