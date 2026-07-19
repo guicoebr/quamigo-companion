@@ -113,11 +113,37 @@ function NovoPetPage() {
   );
   const tutoresFiltrados = useMemo(() => {
     const t = buscaTutor.trim().toLowerCase();
-    if (!t) return tutores.slice(0, 6);
-    return tutores.filter(
-      (x) => x.nome.toLowerCase().includes(t) || x.email.toLowerCase().includes(t),
-    );
-  }, [tutores, buscaTutor]);
+    const base = !t
+      ? tutores.slice(0, 6)
+      : tutores.filter(
+          (x) => x.nome.toLowerCase().includes(t) || x.email.toLowerCase().includes(t),
+        );
+    // Garante que o tutor selecionado (inclusive vindo da URL) permaneça visível.
+    if (tutorId && !base.some((x) => x.id === tutorId)) {
+      const sel = tutores.find((x) => x.id === tutorId);
+      if (sel) return [sel, ...base];
+    }
+    return base;
+  }, [tutores, buscaTutor, tutorId]);
+
+  useEffect(() => {
+    if (!preselectTutorId) return;
+    if (appliedPreselectRef.current) return;
+    if (!tutoresQuery.isSuccess) return;
+    const found = (tutoresQuery.data ?? []).some((t) => t.id === preselectTutorId);
+    if (found) {
+      setValue("tutorId", preselectTutorId, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: true,
+      });
+      setPreselectFailed(false);
+    } else {
+      setPreselectFailed(true);
+    }
+    appliedPreselectRef.current = true;
+  }, [preselectTutorId, tutoresQuery.isSuccess, tutoresQuery.data, setValue]);
+
 
   const errorLabels = FIELD_ORDER
     .filter((field) => Boolean(errors[field]))
