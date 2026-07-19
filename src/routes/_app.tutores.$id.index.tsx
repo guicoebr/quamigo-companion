@@ -19,7 +19,7 @@ import { listPets } from "@/lib/api/pets.functions";
 import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
 import { listOS } from "@/lib/api/ordens-servico.functions";
 import { STATUS_OS_META } from "@/lib/osStatus";
-import { formatBRL, formatCEP, formatCPF, formatDate, formatTelefone } from "@/lib/formatters";
+import { formatBRL, formatCEP, formatCidadeUf, formatCPF, formatDate, formatTelefone } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/tutores/$id/")({
   head: ({ params }) => ({ meta: [{ title: `Tutor ${params.id} — +QAmigo` }] }),
