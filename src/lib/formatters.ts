@@ -16,17 +16,56 @@ export function formatDateTime(iso: string): string {
   return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
-export function formatCPF(cpf: string): string {
-  const digits = cpf.replace(/\D/g, "");
-  if (digits.length !== 11) return cpf;
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+/* ============ CPF ============ */
+
+export function unformatCpf(v: string | null | undefined): string {
+  return (v ?? "").replace(/\D/g, "").slice(0, 11);
 }
 
+export function formatCpf(v: string | null | undefined): string {
+  const d = unformatCpf(v);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+export function isValidCpf(v: string | null | undefined): boolean {
+  const d = unformatCpf(v);
+  if (d.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(d)) return false;
+  const calc = (len: number) => {
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += parseInt(d[i], 10) * (len + 1 - i);
+    const r = (sum * 10) % 11;
+    return r === 10 ? 0 : r;
+  };
+  return calc(9) === parseInt(d[9], 10) && calc(10) === parseInt(d[10], 10);
+}
+
+/** Alias legado — mantém call-sites existentes funcionando. */
+export function formatCPF(cpf: string): string {
+  return formatCpf(cpf);
+}
+
+/* ============ Telefone ============ */
+
+export function unformatPhone(v: string | null | undefined): string {
+  return (v ?? "").replace(/\D/g, "").slice(0, 11);
+}
+
+export function formatPhone(v: string | null | undefined): string {
+  const d = unformatPhone(v);
+  if (d.length === 0) return "";
+  if (d.length <= 2) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+/** Alias legado. */
 export function formatTelefone(tel: string): string {
-  const d = tel.replace(/\D/g, "");
-  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return tel;
+  return formatPhone(tel);
 }
 
 export function formatCEP(cep: string): string {
