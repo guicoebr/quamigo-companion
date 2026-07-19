@@ -415,13 +415,49 @@ function EditarPetPage() {
               />
             </Field>
             <div className="md:col-span-2 flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isPersisting}>
                 <Save className="mr-2 h-4 w-4" /> Salvar alterações
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={pendingValues !== null}
+        onOpenChange={(open) => {
+          if (!open && !isPersisting) {
+            setPendingValues(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar data de nascimento</AlertDialogTitle>
+            <AlertDialogDescription>
+              A data informada indica que o pet possui mais de 20 anos. Deseja continuar mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPersisting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isPersisting || !pendingValues}
+              onClick={async (event) => {
+                event.preventDefault();
+                if (!pendingValues || isPersisting) return;
+                const valuesToPersist = pendingValues;
+                try {
+                  await persistirPet(valuesToPersist);
+                } finally {
+                  setPendingValues(null);
+                }
+              }}
+            >
+              {isPersisting ? "Salvando..." : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
