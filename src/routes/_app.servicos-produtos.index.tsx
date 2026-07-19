@@ -6,6 +6,7 @@ import { Plus, Search, Pencil, Power } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -82,34 +83,52 @@ function ServicosProdutosPage() {
 
       <Card className="rounded-[12px]">
         <CardContent className="p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por nome"
-                className="pl-9"
-              />
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="sp-busca" className="text-xs font-medium text-muted-foreground">
+                Busca
+              </Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="sp-busca"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar por nome"
+                  className="pl-9"
+                />
+              </div>
             </div>
-            <Select value={tipo} onValueChange={setTipo}>
-              <SelectTrigger className="sm:w-44">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os tipos</SelectItem>
-                <SelectItem value="servico">Serviços</SelectItem>
-                <SelectItem value="produto">Produtos</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-              <SelectTrigger className="sm:w-44"><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="ativo">Ativos</SelectItem>
-                <SelectItem value="inativo">Inativos</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-1 sm:w-44">
+              <Label htmlFor="sp-tipo" className="text-xs font-medium text-muted-foreground">
+                Tipo
+              </Label>
+              <Select value={tipo} onValueChange={setTipo}>
+                <SelectTrigger id="sp-tipo">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os tipos</SelectItem>
+                  <SelectItem value="servico">Serviços</SelectItem>
+                  <SelectItem value="produto">Produtos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 sm:w-44">
+              <Label htmlFor="sp-status" className="text-xs font-medium text-muted-foreground">
+                Status
+              </Label>
+              <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+                <SelectTrigger id="sp-status">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="ativo">Ativos</SelectItem>
+                  <SelectItem value="inativo">Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
