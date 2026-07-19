@@ -108,19 +108,23 @@ export const updateTutor = createServerFn({ method: "POST" })
     await requirePermission("tutor.editar");
     const ds = await getDataSource();
     const { endereco, ...rest } = data.patch;
-    await ds.getRepository(TutorEntity).update(data.id, {
-      ...rest,
-      cpf: rest.cpf ? rest.cpf.replace(/\D/g, "") : undefined,
-      telefone: rest.telefone ? rest.telefone.replace(/\D/g, "") : undefined,
-      ...(endereco && {
-        cep: endereco.cep.replace(/\D/g, ""),
-        logradouro: endereco.logradouro,
-        numero: endereco.numero,
-        complemento: endereco.complemento || null,
-        bairro: endereco.bairro,
-        cidade: endereco.cidade,
-        uf: endereco.uf.toUpperCase(),
-      }),
-    });
+    try {
+      await ds.getRepository(TutorEntity).update(data.id, {
+        ...rest,
+        cpf: rest.cpf ? rest.cpf.replace(/\D/g, "") : undefined,
+        telefone: rest.telefone ? rest.telefone.replace(/\D/g, "") : undefined,
+        ...(endereco && {
+          cep: endereco.cep.replace(/\D/g, ""),
+          logradouro: endereco.logradouro,
+          numero: endereco.numero,
+          complemento: endereco.complemento || null,
+          bairro: endereco.bairro,
+          cidade: endereco.cidade,
+          uf: endereco.uf.toUpperCase(),
+        }),
+      });
+    } catch (err) {
+      translateUniqueViolation(err);
+    }
     return toTutorDTO(await ds.getRepository(TutorEntity).findOneByOrFail({ id: data.id }));
   });
