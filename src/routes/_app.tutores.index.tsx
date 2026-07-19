@@ -80,7 +80,6 @@ function TutoresPage() {
 
       <Card className="rounded-[12px]">
         <CardContent className="p-4">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
               <Label htmlFor="tut-busca" className="text-xs font-medium text-muted-foreground">
