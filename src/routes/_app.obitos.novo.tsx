@@ -277,13 +277,29 @@ function RegistrarObitoPage() {
               )}
               {tutorSelecionado && (
                 <>
-                  <div>
+                  <div ref={petAreaRef}>
                     <Label className="mb-2 block">
                       Pet falecido — tutor: {tutorSelecionado.nome}
                     </Label>
-                    {petsDisponiveis.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Este tutor não possui pets vivos cadastrados.
+                    {petsDoTutor.length === 0 ? (
+                      <div className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm">
+                        <p className="text-muted-foreground">
+                          Este tutor ainda não possui pets cadastrados.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => navigate({ to: "/pets/novo" })}
+                        >
+                          Cadastrar pet
+                        </Button>
+                      </div>
+                    ) : petsDisponiveis.length === 0 ? (
+                      <p className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        Este tutor não possui pets disponíveis para este registro. Todos os pets
+                        cadastrados já constam como falecidos.
                       </p>
                     ) : (
                       <div className="grid gap-2 sm:grid-cols-2">
@@ -293,7 +309,13 @@ function RegistrarObitoPage() {
                             <button
                               type="button"
                               key={p.id}
-                              onClick={() => setForm((f) => ({ ...f, petId: p.id }))}
+                              onClick={() => {
+                                setForm((f) => ({ ...f, petId: p.id }));
+                                setErrors((prev) => {
+                                  const { petId: _p, ...rest } = prev;
+                                  return rest;
+                                });
+                              }}
                               className={cn(
                                 "flex items-center gap-3 rounded-md border p-3 text-left transition-colors",
                                 sel
@@ -314,9 +336,12 @@ function RegistrarObitoPage() {
                       </div>
                     )}
                     {errors.petId && (
-                      <p className="mt-2 text-sm text-destructive">{errors.petId}</p>
+                      <p className="mt-2 text-sm text-destructive" role="alert">
+                        {errors.petId}
+                      </p>
                     )}
                   </div>
+
 
                   <div>
                     <Label htmlFor="dataFalecimento">Data do óbito</Label>
