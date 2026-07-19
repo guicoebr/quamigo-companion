@@ -1,35 +1,12 @@
-## Diagnóstico
+## Diagnóstico confirmado
 
-**1. Por que cai em `/brand-book` após login**
+- A tela apareceu quando a aba enviou o identificador antigo da função `me` após o servidor reiniciar: `Invalid server function ID`.
+- A função atual de sessão já responde normalmente (`200`) e o dashboard está operacional; portanto, não é falha do banco nem perda de autenticação.
+- O botão atual de recuperação repete a navegação, mas pode reutilizar o JavaScript antigo da aba e manter o usuário preso.
 
-O `login.tsx` faz:
-```ts
-navigate({ to: search.redirect ?? defaultRouteForRole(result.user.role) });
-```
+## Implementação
 
-Quando você acessou `/brand-book` sem sessão, o guard do `_app` te mandou para `/login?redirect=/brand-book`. Depois do login, o formulário respeita esse `search.redirect` e te devolve para `/brand-book` — mesmo que o destino padrão da role seja `/dashboard`. Enquanto o parâmetro `redirect=/brand-book` estiver na URL do login, todo login continua caindo lá.
-
-**2. Por que "não vejo o menu"**
-
-Seu viewport atual é 549px (mobile). O `Sidebar` do shadcn nessa largura opera em modo **offcanvas** — fica escondido até você clicar no botão de toggle (ícone de menu) que já existe na `Topbar` (`SidebarTrigger`). Ou seja, o menu está lá, só não abre sozinho no mobile.
-
-## Mudanças propostas
-
-### A. Ignorar `redirect` para `/brand-book` no pós-login
-Em `src/routes/login.tsx`, tratar `/brand-book` como não-destino (é uma página informativa, não a home de ninguém). Aplicar em dois pontos:
-
-- `beforeLoad` (quando já está logado e visita `/login`)
-- `onSubmit` (após autenticar)
-
-Regra: se `search.redirect` for ausente, `/login`, `/` ou `/brand-book`, usar `defaultRouteForRole(user.role)` (= `/dashboard`).
-
-### B. (opcional) Deixar o botão de menu mais óbvio no mobile
-Nada de lógica nova — apenas garantir que o `SidebarTrigger` na `Topbar` tenha rótulo/aria visível em telas pequenas para você localizar o toggle. Sem alterar comportamento.
-
-## Detalhes técnicos
-
-Arquivos afetados:
-- `src/routes/login.tsx` — adicionar helper `resolvePostLoginTarget(search.redirect, user.role)` e usar nos dois pontos.
-- (opcional) `src/components/layout/Topbar.tsx` — nenhuma mudança de estrutura, só um `aria-label="Abrir menu"` no trigger se ainda não existir.
-
-Sem mudanças de backend, permissões ou rotas.
+1. Ajustar somente a ação **“Try again”** da tela global de erro para fazer uma recarga completa do documento (`window.location.reload()`), garantindo que o navegador baixe os identificadores atuais das funções.
+2. Manter **“Go home”** como alternativa de saída e preservar o restante do tratamento de erros.
+3. Não alterar banco, sessão, login, infraestrutura, rotas ou contratos de API.
+4. Validar no preview que o dashboard continua acessível e que a tela de erro permite uma recuperação efetiva após uma falha transitória.
