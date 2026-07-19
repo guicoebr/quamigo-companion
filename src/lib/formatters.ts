@@ -68,10 +68,28 @@ export function formatTelefone(tel: string): string {
   return formatPhone(tel);
 }
 
-export function formatCEP(cep: string): string {
-  const d = cep.replace(/\D/g, "");
-  if (d.length !== 8) return cep;
+/* ============ CEP ============ */
+
+export function unformatCep(v: string | null | undefined): string {
+  return (v ?? "").replace(/\D/g, "").slice(0, 8);
+}
+
+export function formatCep(v: string | null | undefined): string {
+  const d = unformatCep(v);
+  if (d.length <= 5) return d;
   return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
+export function isValidCep(v: string | null | undefined): boolean {
+  const d = unformatCep(v);
+  if (d.length !== 8) return false;
+  if (/^(\d)\1{7}$/.test(d)) return false;
+  return true;
+}
+
+/** Alias legado — mantém call-sites existentes funcionando. */
+export function formatCEP(cep: string | null | undefined): string {
+  return formatCep(cep);
 }
 
 /**
