@@ -19,7 +19,7 @@ import { getTutor } from "@/lib/api/tutores.functions";
 import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
 import { listOS } from "@/lib/api/ordens-servico.functions";
 import { STATUS_OS_META } from "@/lib/osStatus";
-import { formatBRL, formatDate } from "@/lib/formatters";
+import { formatBRL, formatCidadeUf, formatDate } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/pets/$id/")({
   head: ({ params }) => ({ meta: [{ title: `Pet ${params.id} — +QAmigo` }] }),
@@ -136,7 +136,7 @@ function PetDetalhe() {
                   {tutor.nome}
                 </Link>
                 <p className="text-muted-foreground">
-                  {tutor.email} • {tutor.endereco.cidade}/{tutor.endereco.uf}
+                  {tutor.email} • {formatCidadeUf(tutor.endereco.cidade, tutor.endereco.uf)}
                 </p>
               </div>
             ) : (

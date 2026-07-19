@@ -24,7 +24,7 @@ import {
 import { listTutores } from "@/lib/api/tutores.functions";
 import { listPets } from "@/lib/api/pets.functions";
 import { listOS } from "@/lib/api/ordens-servico.functions";
-import { formatCPF, formatTelefone } from "@/lib/formatters";
+import { formatCidadeUf, formatCPF, formatTelefone } from "@/lib/formatters";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 
 export const Route = createFileRoute("/_app/tutores/")({
@@ -127,7 +127,7 @@ function TutoresPage() {
                       <TableCell className="tabular-nums">{formatCPF(t.cpf)}</TableCell>
                       <TableCell className="tabular-nums">{formatTelefone(t.telefone)}</TableCell>
                       <TableCell>
-                        {t.endereco.cidade} / {t.endereco.uf}
+                        {formatCidadeUf(t.endereco.cidade, t.endereco.uf)}
                       </TableCell>
                       <TableCell className="text-center">{petsDoEsteTutor.length}</TableCell>
                       <TableCell className="text-center">{oss.length}</TableCell>

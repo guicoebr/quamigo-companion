@@ -26,7 +26,7 @@ import { listPets } from "@/lib/api/pets.functions";
 import { listEspecies, listModalidades } from "@/lib/api/lookups.functions";
 import { listServicosProdutos } from "@/lib/api/servicos-produtos.functions";
 import { registrarObito } from "@/lib/api/ordens-servico.functions";
-import { formatBRL, formatCPF, formatDate } from "@/lib/formatters";
+import { formatBRL, formatCidadeUf, formatCPF, formatDate } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/obitos/novo")({
   head: () => ({ meta: [{ title: "Registrar óbito — +QAmigo" }] }),
@@ -230,7 +230,7 @@ function RegistrarObitoPage() {
                     >
                       <p className="text-sm font-medium">{t.nome}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatCPF(t.cpf)} • {t.endereco.cidade}/{t.endereco.uf}
+                        {formatCPF(t.cpf)} • {formatCidadeUf(t.endereco.cidade, t.endereco.uf)}
                       </p>
                     </button>
                   );
