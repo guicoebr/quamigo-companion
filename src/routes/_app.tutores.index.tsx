@@ -81,28 +81,40 @@ function TutoresPage() {
       <Card className="rounded-[12px]">
         <CardContent className="p-4">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por nome, CPF, e-mail ou telefone"
-                className="pl-9"
-              />
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="tut-busca" className="text-xs font-medium text-muted-foreground">
+                Busca
+              </Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="tut-busca"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar por nome, CPF, e-mail ou telefone"
+                  className="pl-9"
+                />
+              </div>
             </div>
-            <Select value={uf} onValueChange={setUf}>
-              <SelectTrigger className="sm:w-40">
-                <SelectValue placeholder="UF" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as UFs</SelectItem>
-                {ufs.map((u) => (
-                  <SelectItem key={u} value={u}>
-                    {u}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-1 sm:w-40">
+              <Label htmlFor="tut-uf" className="text-xs font-medium text-muted-foreground">
+                UF
+              </Label>
+              <Select value={uf} onValueChange={setUf}>
+                <SelectTrigger id="tut-uf">
+                  <SelectValue placeholder="UF" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as UFs</SelectItem>
+                  {ufs.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
