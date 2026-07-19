@@ -44,7 +44,17 @@ const schema = z.object({
     .refine((v) => unformatPhone(v).length >= 10, { message: "Informe ao menos um contato." }),
   contato2: z.string().optional().or(z.literal("")),
   contato3: z.string().optional().or(z.literal("")),
-  cep: z.string().optional().or(z.literal("")),
+  cep: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (v) => {
+        const d = unformatCep(v ?? "");
+        return d.length === 0 || isValidCep(d);
+      },
+      { message: "CEP inválido. Informe os 8 dígitos." },
+    ),
   logradouro: z.string().optional().or(z.literal("")),
   numero: z.string().optional().or(z.literal("")),
   bairro: z.string().optional().or(z.literal("")),
