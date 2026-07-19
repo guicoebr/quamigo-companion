@@ -110,5 +110,39 @@ export function formatCidadeUf(
   if (u) return u;
   return "—";
 }
+/**
+ * Monta um endereço em uma única linha, ignorando partes vazias.
+ * Exemplo: "Rua das Flores, 123, Sala 2 — Centro — Araçatuba/SP".
+ * Retorna "—" quando não há nenhum dado.
+ */
+export function formatEnderecoResumido(endereco: {
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  uf?: string | null;
+}): string {
+  const logradouro = (endereco.logradouro ?? "").trim();
+  const numero = (endereco.numero ?? "").trim();
+  const complemento = (endereco.complemento ?? "").trim();
+  const bairro = (endereco.bairro ?? "").trim();
+  const cidadeUf = formatCidadeUf(endereco.cidade, endereco.uf);
+
+  const enderecoPrincipal = [
+    logradouro && numero ? `${logradouro}, ${numero}` : logradouro || numero,
+    complemento,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const partes = [
+    enderecoPrincipal,
+    bairro,
+    cidadeUf !== "—" ? cidadeUf : "",
+  ].filter(Boolean);
+
+  return partes.length > 0 ? partes.join(" — ") : "—";
+}
 
 // Numeração de OS/PG/CT agora é atômica no servidor — ver src/server/numbering.server.ts.

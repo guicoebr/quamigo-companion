@@ -1,6 +1,7 @@
+import type * as React from "react";
 import { createFileRoute, getRouteApi, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, Weight, PawPrint, Pencil } from "lucide-react";
+import { ArrowLeft, Calendar, Weight, PawPrint, Pencil, User, Phone, Mail, MapPin, Eye } from "lucide-react";
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,7 @@ import { getTutor } from "@/lib/api/tutores.functions";
 import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
 import { listOS } from "@/lib/api/ordens-servico.functions";
 import { STATUS_OS_META } from "@/lib/osStatus";
-import { formatBRL, formatCidadeUf, formatDate } from "@/lib/formatters";
+import { formatBRL, formatCidadeUf, formatCpf, formatDate, formatEnderecoResumido, formatPhone } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/pets/$id/")({
   head: ({ params }) => ({ meta: [{ title: `Pet ${params.id} — +QAmigo` }] }),
@@ -123,22 +124,45 @@ function PetDetalhe() {
 
         <Card className="rounded-[12px] lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Tutor</CardTitle>
+            <CardTitle className="text-base">Dados do tutor</CardTitle>
           </CardHeader>
           <CardContent className="text-sm">
             {tutor ? (
-              <div className="space-y-1">
-                <Link
-                  to="/tutores/$id"
-                  params={{ id: tutor.id }}
-                  className="text-base font-medium text-primary hover:underline"
-                >
-                  {tutor.nome}
-                </Link>
-                <p className="text-muted-foreground">
-                  {tutor.email} • {formatCidadeUf(tutor.endereco.cidade, tutor.endereco.uf)}
-                </p>
-              </div>
+              <>
+                <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+                  <TutorField icon={<User className="h-4 w-4 text-muted-foreground" />} label="Nome">
+                    {tutor.nome?.trim() || "—"}
+                  </TutorField>
+                  <TutorField label="CPF">
+                    <span className="tabular-nums">{formatCpf(tutor.cpf) || "—"}</span>
+                  </TutorField>
+                  <TutorField icon={<Phone className="h-4 w-4 text-muted-foreground" />} label="Telefone">
+                    <span className="tabular-nums">{formatPhone(tutor.telefone) || "—"}</span>
+                  </TutorField>
+                  <TutorField icon={<Mail className="h-4 w-4 text-muted-foreground" />} label="E-mail">
+                    <span className="break-all">{tutor.email?.trim() || "—"}</span>
+                  </TutorField>
+                  <TutorField icon={<MapPin className="h-4 w-4 text-muted-foreground" />} label="Cidade/UF">
+                    {formatCidadeUf(tutor.endereco?.cidade, tutor.endereco?.uf)}
+                  </TutorField>
+                  <TutorField
+                    icon={<MapPin className="h-4 w-4 text-muted-foreground" />}
+                    label="Endereço"
+                    className="md:col-span-2"
+                  >
+                    <span className="break-words">
+                      {formatEnderecoResumido(tutor.endereco ?? {})}
+                    </span>
+                  </TutorField>
+                </div>
+                <div className="mt-4 flex justify-end border-t border-border pt-4">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/tutores/$id" params={{ id: tutor.id }}>
+                      <Eye className="mr-2 h-4 w-4" /> Ver tutor
+                    </Link>
+                  </Button>
+                </div>
+              </>
             ) : (
               <p className="text-muted-foreground">Tutor não encontrado.</p>
             )}
@@ -188,5 +212,27 @@ function PetDetalhe() {
         </CardContent>
       </Card>
     </>
+  );
+}
+
+function TutorField({
+  icon,
+  label,
+  children,
+  className,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="mt-1 text-sm text-foreground">{children}</div>
+    </div>
   );
 }
