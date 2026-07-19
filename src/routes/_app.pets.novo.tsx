@@ -24,6 +24,48 @@ import { listTutores } from "@/lib/api/tutores.functions";
 import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
 import { cn } from "@/lib/utils";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+function calcularIdadeAnos(
+  dataISO: string | null | undefined,
+): number | null {
+  if (!dataISO) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dataISO);
+  if (!match) return null;
+  const ano = Number(match[1]);
+  const mes = Number(match[2]);
+  const dia = Number(match[3]);
+  if (
+    !Number.isInteger(ano) ||
+    !Number.isInteger(mes) ||
+    !Number.isInteger(dia) ||
+    mes < 1 ||
+    mes > 12 ||
+    dia < 1
+  ) {
+    return null;
+  }
+  const diasNoMes = new Date(ano, mes, 0).getDate();
+  if (dia > diasNoMes) return null;
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = hoje.getMonth() + 1;
+  const diaAtual = hoje.getDate();
+  let idade = anoAtual - ano;
+  if (mesAtual < mes || (mesAtual === mes && diaAtual < dia)) {
+    idade -= 1;
+  }
+  return idade;
+}
 
 const schema = z.object({
   tutorId: z.string().min(1, "Selecione o tutor responsável."),
