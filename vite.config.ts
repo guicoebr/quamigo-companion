@@ -22,17 +22,23 @@ export default defineConfig({
     },
   },
   vite: {
+    plugins: [
+      {
+        // Nitro's Worker build has no matching condition for TypeORM's package
+        // root. Resolve it to the real CommonJS entry only while building, when
+        // Rollup's CommonJS transform is active. Applying this during `vite dev`
+        // makes Vite's ESM module runner execute the file without `exports`.
+        name: "qamigo:resolve-typeorm-worker-entry",
+        apply: "build",
+        enforce: "pre",
+        resolveId(source) {
+          if (source !== "typeorm") return null;
+          return new URL("./node_modules/typeorm/index.js", import.meta.url).pathname;
+        },
+      },
+    ],
     resolve: {
       alias: [
-        {
-          // Nitro's Worker build has no matching condition for TypeORM's package root.
-          // Point at the real CommonJS entry so Vite/Rollup applies its CJS transform.
-          // TypeORM's index.mjs is only a thin wrapper around index.js; aliasing to that
-          // wrapper makes Vite execute the CommonJS file as ESM (`exports is not defined`).
-          // Keep this exact-root-only so TypeORM subpath imports retain normal resolution.
-          find: /^typeorm$/,
-          replacement: new URL("./node_modules/typeorm/index.js", import.meta.url).pathname,
-        },
         {
           // TypeORM's ESM build unconditionally imports "expo-sqlite" (its React Native driver).
           // Alias it to a no-op stub so the SSR bundle can load without a real Expo dependency.
