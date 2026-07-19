@@ -230,7 +230,7 @@ function RegistrarObitoPage() {
                     >
                       <p className="text-sm font-medium">{t.nome}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatCPF(t.cpf)} • {t.endereco.cidade}/{t.endereco.uf}
+                        {formatCPF(t.cpf)} • {formatCidadeUf(t.endereco.cidade, t.endereco.uf)}
                       </p>
                     </button>
                   );
