@@ -25,12 +25,13 @@ export default defineConfig({
     resolve: {
       alias: [
         {
-          // Nitro's Worker build has no matching condition for TypeORM's package root
-          // (which only exposes node/browser/react-native entries). Resolve only the exact
-          // root import to its ESM entry; subpaths such as typeorm/util/StringUtils must keep
-          // using TypeORM's own exports map for typeorm-naming-strategies.
+          // Nitro's Worker build has no matching condition for TypeORM's package root.
+          // Point at the real CommonJS entry so Vite/Rollup applies its CJS transform.
+          // TypeORM's index.mjs is only a thin wrapper around index.js; aliasing to that
+          // wrapper makes Vite execute the CommonJS file as ESM (`exports is not defined`).
+          // Keep this exact-root-only so TypeORM subpath imports retain normal resolution.
           find: /^typeorm$/,
-          replacement: new URL("./node_modules/typeorm/index.mjs", import.meta.url).pathname,
+          replacement: new URL("./node_modules/typeorm/index.js", import.meta.url).pathname,
         },
         {
           // TypeORM's ESM build unconditionally imports "expo-sqlite" (its React Native driver).
