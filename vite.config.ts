@@ -8,17 +8,19 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// The Lovable sandbox forcibly overrides Nitro to `cloudflare-module`, which cannot
-// bundle typeorm/pg (native TCP driver, no worker/browser exports condition). We deploy
-// on Railway using the Dockerfile pipeline (npm run build) OUTSIDE the sandbox, so
-// disable Nitro entirely here to keep the sandbox harness green while dev (`vite dev`)
-// continues to run the full Node-based server for the preview.
+// Keep the deploy adapter enabled. Published Lovable Cloud builds need Nitro to collect
+// every server dependency (including TanStack's aliased `h3-v2` package) into the Worker
+// bundle. Disabling it leaves bare server imports that are unavailable at runtime.
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     server: { entry: "server" },
   },
-  nitro: false,
+  nitro: {
+    cloudflare: {
+      nodeCompat: true,
+    },
+  },
   vite: {
     resolve: {
       alias: {
