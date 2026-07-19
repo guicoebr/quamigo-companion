@@ -8,6 +8,9 @@ import {
   isValidCpf,
   formatPhone,
   unformatPhone,
+  formatCep,
+  unformatCep,
+  isValidCep,
 } from "@/lib/formatters";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
