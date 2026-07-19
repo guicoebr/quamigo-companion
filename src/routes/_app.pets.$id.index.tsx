@@ -1,3 +1,4 @@
+import type * as React from "react";
 import { createFileRoute, getRouteApi, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, Weight, PawPrint, Pencil, User, Phone, Mail, MapPin, Eye } from "lucide-react";
