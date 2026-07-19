@@ -73,10 +73,10 @@ export function EspeciesRacasTab() {
   }, [especieId, especies, especiesQuery.isSuccess, navigate]);
 
   const selecionarEspecie = (id: string) => {
-    navigate({ search: { especieId: id } });
+    navigate({ to: "/configuracoes/especies", search: { especieId: id } });
   };
   const voltarParaLista = () => {
-    navigate({ search: { especieId: undefined } });
+    navigate({ to: "/configuracoes/especies", search: { especieId: undefined } });
   };
 
   const especieSelecionada = especies.find((e) => e.id === especieId) ?? null;
