@@ -13,12 +13,16 @@ export function FormErrorSummary({
   const unique = Array.from(new Set(labels.filter((l): l is string => Boolean(l))));
   if (unique.length === 0) return null;
   return (
-    <Alert variant="destructive" aria-live="assertive" className="mb-4">
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>{title}</AlertTitle>
+    <Alert
+      variant="destructive"
+      aria-live="assertive"
+      className="mb-4 border-2 border-destructive bg-destructive/10 shadow-lg"
+    >
+      <AlertCircle className="h-5 w-5" />
+      <AlertTitle className="font-semibold">{title}</AlertTitle>
       <AlertDescription>
-        <p className="mt-1 text-sm">Campos que precisam de atenção:</p>
-        <ul className="mt-1 list-disc pl-5 text-sm">
+        <p className="mt-1 text-sm font-medium">Campos que precisam de atenção:</p>
+        <ul className="mt-1 list-disc pl-5 text-sm font-medium">
           {unique.map((label) => (
             <li key={label}>{label}</li>
           ))}
