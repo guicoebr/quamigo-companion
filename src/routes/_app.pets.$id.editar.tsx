@@ -21,7 +21,6 @@ import {
 import { getPet, updatePet } from "@/lib/api/pets.functions";
 import { listTutores } from "@/lib/api/tutores.functions";
 import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
-import { cn } from "@/lib/utils";
 import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 
 const schema = z.object({
