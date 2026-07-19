@@ -1,7 +1,14 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller, type Control, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import {
+  formatCpf,
+  unformatCpf,
+  isValidCpf,
+  formatPhone,
+  unformatPhone,
+} from "@/lib/formatters";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Save } from "lucide-react";
@@ -15,14 +22,23 @@ import { getTutor, createTutor, updateTutor } from "@/lib/api/tutores.functions"
 
 const schema = z.object({
   nome: z.string().min(2, "Nome obrigatório."),
-  cpf: z.string().optional().or(z.literal("")),
+  cpf: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => {
+      const d = unformatCpf(v ?? "");
+      return d.length < 11 || isValidCpf(d);
+    }, { message: "CPF inválido. Verifique os números informados." }),
   rne: z.string().optional().or(z.literal("")),
   email: z
     .string()
     .optional()
     .or(z.literal(""))
     .refine((v) => !v || /\S+@\S+\.\S+/.test(v), { message: "E-mail inválido." }),
-  contato1: z.string().min(1, "Informe ao menos um contato."),
+  contato1: z
+    .string()
+    .refine((v) => unformatPhone(v).length >= 10, { message: "Informe ao menos um contato." }),
   contato2: z.string().optional().or(z.literal("")),
   contato3: z.string().optional().or(z.literal("")),
   cep: z.string().optional().or(z.literal("")),
@@ -49,15 +65,15 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
   });
   if (mode === "editar" && !isLoading && !existing) throw notFound();
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: existing
       ? {
           nome: existing.nome,
-          cpf: existing.cpf,
+          cpf: formatCpf(existing.cpf),
           rne: "",
           email: existing.email,
-          contato1: existing.telefone,
+          contato1: formatPhone(existing.telefone),
           contato2: "",
           contato3: "",
           cep: existing.endereco.cep,
@@ -83,9 +99,9 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
     };
     const payload = {
       nome: values.nome,
-      cpf: values.cpf ?? "",
+      cpf: unformatCpf(values.cpf ?? ""),
       email: values.email ?? "",
-      telefone: values.contato1,
+      telefone: unformatPhone(values.contato1),
       endereco,
       observacoes: values.observacoes || undefined,
     };
@@ -124,7 +140,13 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               <Input {...register("nome")} />
             </Field>
             <Field label="CPF" error={errors.cpf?.message}>
-              <Input {...register("cpf")} placeholder="000.000.000-00" />
+              <MaskedInput
+                control={control}
+                name="cpf"
+                mask={formatCpf}
+                placeholder="000.000.000-00"
+                inputMode="numeric"
+              />
             </Field>
             <Field label="RNE" error={errors.rne?.message}>
               <Input {...register("rne")} />
@@ -133,13 +155,29 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               <Input type="email" {...register("email")} />
             </Field>
             <Field label="Contato 1*" error={errors.contato1?.message}>
-              <Input {...register("contato1")} placeholder="(11) 99999-0000" />
+              <MaskedInput
+                control={control}
+                name="contato1"
+                mask={formatPhone}
+                placeholder="(11) 99999-0000"
+                inputMode="tel"
+              />
             </Field>
             <Field label="Contato 2" error={errors.contato2?.message}>
-              <Input {...register("contato2")} />
+              <MaskedInput
+                control={control}
+                name="contato2"
+                mask={formatPhone}
+                inputMode="tel"
+              />
             </Field>
             <Field label="Contato 3" error={errors.contato3?.message}>
-              <Input {...register("contato3")} />
+              <MaskedInput
+                control={control}
+                name="contato3"
+                mask={formatPhone}
+                inputMode="tel"
+              />
             </Field>
             <Field label="CEP" error={errors.cep?.message}>
               <Input {...register("cep")} placeholder="00000-000" />
@@ -183,6 +221,34 @@ function Field({ label, error, children }: { label: string; error?: string; chil
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
+  );
+}
+
+type MaskedInputProps = {
+  control: Control<FormValues>;
+  name: FieldPath<FormValues>;
+  mask: (v: string) => string;
+  placeholder?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+};
+
+function MaskedInput({ control, name, mask, placeholder, inputMode }: MaskedInputProps) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <Input
+          value={mask(field.value ?? "")}
+          onChange={(e) => field.onChange(mask(e.target.value))}
+          onBlur={field.onBlur}
+          name={field.name}
+          ref={field.ref}
+          placeholder={placeholder}
+          inputMode={inputMode}
+        />
+      )}
+    />
   );
 }
 
