@@ -8,26 +8,29 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// The Lovable sandbox forcibly overrides Nitro to `cloudflare-module`, which cannot
+// bundle typeorm/pg (native TCP driver, no worker/browser exports condition). We deploy
+// on Railway using the Dockerfile pipeline (npm run build) OUTSIDE the sandbox, so
+// disable Nitro entirely here to keep the sandbox harness green while dev (`vite dev`)
+// continues to run the full Node-based server for the preview.
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
     server: { entry: "server" },
   },
-  // Force nitro on (it's otherwise Lovable-sandbox-only) with a standard Node server output,
-  // since we deploy on Railway (not Cloudflare Workers) and need TypeORM/pg's native TCP driver.
-  nitro: {
-    preset: "node",
-  },
-  // TypeORM's ESM build unconditionally imports "expo-sqlite" (its React Native driver) even
-  // though we only ever use the postgres driver. That import is fine at runtime via plain Node
-  // resolution (unreachable code path), but the bundler hoists it into a static import that
-  // crashes the whole server chunk at module load if the package isn't installed. Alias it to a
-  // no-op stub instead of pulling in a real Expo/React Native dependency.
+  nitro: false,
   vite: {
     resolve: {
       alias: {
+        // TypeORM's ESM build unconditionally imports "expo-sqlite" (its React Native driver).
+        // Alias it to a no-op stub so the SSR bundle can load without a real Expo dependency.
         "expo-sqlite": new URL("./src/server/stubs/expo-sqlite.ts", import.meta.url).pathname,
+      },
+    },
+    ssr: {
+      resolve: {
+        conditions: ["node", "import", "module", "default"],
+        externalConditions: ["node", "import", "module", "default"],
       },
     },
   },
