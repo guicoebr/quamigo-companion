@@ -63,8 +63,15 @@ const LABELS: Record<FieldName, string> = {
   dataNascimento: "Data de nascimento",
 };
 
+type PetsNovoSearch = { tutorId?: string };
+
 export const Route = createFileRoute("/_app/pets/novo")({
   head: () => ({ meta: [{ title: "Novo pet — +QAmigo" }] }),
+  validateSearch: (search: Record<string, unknown>): PetsNovoSearch => {
+    const raw = search.tutorId;
+    const tutorId = typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+    return tutorId ? { tutorId } : {};
+  },
   component: NovoPetPage,
 });
 
