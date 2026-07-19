@@ -7,14 +7,27 @@ const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
   try {
     return await next();
   } catch (error) {
-    // Re-throw errors that TanStack should propagate to the client as-is
-    // (HTTP-shaped errors with statusCode, our own AuthError with a `status`,
-    // and any server-fn call so the client gets the real message instead of
-    // a blank 500 HTML page).
-    if (error != null && typeof error === "object" && ("statusCode" in error || "status" in error)) {
-      throw error;
+    const isServerFn =
+      !!request?.url && new URL(request.url).pathname.startsWith("/_serverFn/");
+
+    // For server-fn RPC calls, return a proper JSON error response with the
+    // right status so the client createServerFn wrapper throws a normal Error
+    // (and, for 401s, the UI can react) — instead of the fallback HTML page.
+    if (isServerFn) {
+      const status =
+        (error as { status?: number; statusCode?: number })?.status ??
+        (error as { status?: number; statusCode?: number })?.statusCode ??
+        500;
+      const message =
+        error instanceof Error ? error.message : String(error ?? "Unknown error");
+      if (status >= 500) console.error(error);
+      return new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
     }
-    if (request?.url && new URL(request.url).pathname.startsWith("/_serverFn/")) {
+
+    if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
     console.error(error);
