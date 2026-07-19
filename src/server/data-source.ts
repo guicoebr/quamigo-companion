@@ -48,6 +48,12 @@ function databaseUrl(): string {
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: databaseUrl(),
+  // Railway's public proxy (rlwy.net) presents a self-signed cert. Accept it
+  // when DATABASE_SSL isn't explicitly disabled.
+  ssl:
+    process.env.DATABASE_SSL === "false"
+      ? false
+      : { rejectUnauthorized: false },
   namingStrategy: new SnakeNamingStrategy(),
   synchronize: false,
   logging: process.env.NODE_ENV !== "production" && process.env.TYPEORM_LOGGING !== "false",
