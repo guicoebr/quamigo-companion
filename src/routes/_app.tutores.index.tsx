@@ -118,7 +118,9 @@ function TutoresPage() {
                 </SelectContent>
               </Select>
             </div>
+            </div>
           </div>
+
 
           <div className="overflow-x-auto">
             <Table>
