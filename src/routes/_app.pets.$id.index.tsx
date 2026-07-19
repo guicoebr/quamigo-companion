@@ -213,3 +213,25 @@ function PetDetalhe() {
     </>
   );
 }
+
+function TutorField({
+  icon,
+  label,
+  children,
+  className,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="mt-1 text-sm text-foreground">{children}</div>
+    </div>
+  );
+}
