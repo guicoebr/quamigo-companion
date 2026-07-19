@@ -176,8 +176,13 @@ function EditarPetPage() {
     .map((field) => LABELS[field])
     .filter((label): label is string => Boolean(label));
 
-  async function onValid(values: FormValues) {
+  const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
+  const [isPersisting, setIsPersisting] = useState(false);
+
+  async function persistirPet(values: FormValues) {
+    if (isPersisting) return;
     try {
+      setIsPersisting(true);
       await updatePet({
         data: {
           id: pet.id,
@@ -199,7 +204,18 @@ function EditarPetPage() {
       navigate({ to: "/pets/$id", params: { id: pet.id } });
     } catch {
       toast.error("Não foi possível atualizar o pet.");
+    } finally {
+      setIsPersisting(false);
     }
+  }
+
+  async function onValid(values: FormValues) {
+    const idade = calcularIdadeAnos(values.dataNascimento);
+    if (idade !== null && idade > 20) {
+      setPendingValues(values);
+      return;
+    }
+    await persistirPet(values);
   }
 
   function onInvalid() {
