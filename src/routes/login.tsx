@@ -61,7 +61,7 @@ function LoginPage() {
       setError(result.error);
       return;
     }
-    navigate({ to: search.redirect ?? defaultRouteForRole(result.user.role) });
+    navigate({ to: resolvePostLoginTarget(search.redirect, result.user.role) });
   }
 
   return (
