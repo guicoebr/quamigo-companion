@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -21,13 +21,17 @@ import {
 import { getPet, updatePet } from "@/lib/api/pets.functions";
 import { listTutores } from "@/lib/api/tutores.functions";
 import { listEspecies, listRacas } from "@/lib/api/lookups.functions";
+import { cn } from "@/lib/utils";
+import { FormErrorSummary } from "@/components/forms/FormErrorSummary";
 
 const schema = z.object({
-  tutorId: z.string().min(1, "Tutor obrigatório."),
-  nome: z.string().min(1, "Nome obrigatório."),
+  tutorId: z.string().min(1, "Selecione o tutor responsável."),
+  nome: z.string().min(1, "Informe o nome do pet."),
   especieId: z.string().optional().or(z.literal("")),
   racaId: z.string().optional().or(z.literal("")),
-  sexo: z.enum(["macho", "femea"]),
+  sexo: z.enum(["macho", "femea"], {
+    errorMap: () => ({ message: "Selecione o sexo." }),
+  }),
   cor: z.string().optional().or(z.literal("")),
   pesoKg: z.coerce
     .number({ invalid_type_error: "Peso inválido." })
@@ -37,6 +41,31 @@ const schema = z.object({
   dataFalecimento: z.string().optional().or(z.literal("")),
 });
 type FormValues = z.infer<typeof schema>;
+
+const FIELD_ORDER = [
+  "tutorId",
+  "nome",
+  "especieId",
+  "racaId",
+  "sexo",
+  "cor",
+  "pesoKg",
+  "dataNascimento",
+  "dataFalecimento",
+] as const;
+type FieldName = (typeof FIELD_ORDER)[number];
+
+const LABELS: Record<FieldName, string> = {
+  tutorId: "Tutor responsável",
+  nome: "Nome do pet",
+  especieId: "Espécie",
+  racaId: "Raça",
+  sexo: "Sexo",
+  cor: "Cor",
+  pesoKg: "Peso",
+  dataNascimento: "Data de nascimento",
+  dataFalecimento: "Data de falecimento",
+};
 
 export const Route = createFileRoute("/_app/pets/$id/editar")({
   head: ({ params }) => ({ meta: [{ title: `Editar pet ${params.id} — +QAmigo` }] }),
@@ -67,15 +96,21 @@ function EditarPetPage() {
     queryFn: () => listEspecies(),
   });
   const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
+  const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
+  const triggerRefs = useRef<Partial<Record<FieldName, HTMLButtonElement | null>>>({});
 
   const {
     register,
     handleSubmit,
     setValue,
+    setFocus,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
+    shouldFocusError: false,
     defaultValues: {
       tutorId: pet.tutorId,
       nome: pet.nome,
@@ -95,7 +130,12 @@ function EditarPetPage() {
     [racas, especieId],
   );
 
-  async function onSubmit(values: FormValues) {
+  const errorLabels = FIELD_ORDER
+    .filter((field) => Boolean(errors[field]))
+    .map((field) => LABELS[field])
+    .filter((label): label is string => Boolean(label));
+
+  async function onValid(values: FormValues) {
     try {
       await updatePet({
         data: {
@@ -114,11 +154,32 @@ function EditarPetPage() {
         },
       });
       toast.success("Pet atualizado.");
+      setHasSubmitAttempted(false);
       navigate({ to: "/pets/$id", params: { id: pet.id } });
     } catch {
       toast.error("Não foi possível atualizar o pet.");
     }
   }
+
+  function onInvalid() {
+    setHasSubmitAttempted(true);
+    const first = FIELD_ORDER.find((f) => Boolean(errors[f])) as FieldName | undefined;
+    if (!first) return;
+    requestAnimationFrame(() => {
+      if (first === "tutorId" || first === "especieId" || first === "racaId" || first === "sexo") {
+        const trigger = triggerRefs.current[first];
+        trigger?.focus();
+        trigger?.scrollIntoView({ block: "center", behavior: "smooth" });
+        return;
+      }
+      setFocus(first);
+      const el = document.getElementById(first);
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }
+
+  const invalidClass =
+    "aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive/20";
 
   return (
     <>
@@ -135,13 +196,26 @@ function EditarPetPage() {
       />
       <Card className="rounded-[12px]">
         <CardContent className="p-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field label="Tutor*" error={errors.tutorId?.message}>
+          {hasSubmitAttempted && <FormErrorSummary labels={errorLabels} />}
+          <form
+            onSubmit={handleSubmit(onValid, onInvalid)}
+            noValidate
+            className="grid grid-cols-1 gap-4 md:grid-cols-2"
+          >
+            <Field id="tutorId" label="Tutor*" error={errors.tutorId?.message}>
               <Select
                 value={watch("tutorId")}
                 onValueChange={(v) => setValue("tutorId", v, { shouldValidate: true })}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  id="tutorId"
+                  ref={(el) => {
+                    triggerRefs.current.tutorId = el;
+                  }}
+                  className={invalidClass}
+                  aria-invalid={Boolean(errors.tutorId) || undefined}
+                  aria-describedby={errors.tutorId ? "tutorId-error" : undefined}
+                >
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
@@ -153,18 +227,32 @@ function EditarPetPage() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Nome*" error={errors.nome?.message}>
-              <Input {...register("nome")} />
+            <Field id="nome" label="Nome*" error={errors.nome?.message}>
+              <Input
+                id="nome"
+                {...register("nome")}
+                className={invalidClass}
+                aria-invalid={Boolean(errors.nome) || undefined}
+                aria-describedby={errors.nome ? "nome-error" : undefined}
+              />
             </Field>
-            <Field label="Espécie" error={errors.especieId?.message}>
+            <Field id="especieId" label="Espécie" error={errors.especieId?.message}>
               <Select
                 value={watch("especieId") || undefined}
                 onValueChange={(v) => {
-                  setValue("especieId", v);
-                  setValue("racaId", "");
+                  setValue("especieId", v, { shouldValidate: true });
+                  setValue("racaId", "", { shouldValidate: true });
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  id="especieId"
+                  ref={(el) => {
+                    triggerRefs.current.especieId = el;
+                  }}
+                  className={invalidClass}
+                  aria-invalid={Boolean(errors.especieId) || undefined}
+                  aria-describedby={errors.especieId ? "especieId-error" : undefined}
+                >
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
@@ -178,12 +266,20 @@ function EditarPetPage() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Raça" error={errors.racaId?.message}>
+            <Field id="racaId" label="Raça" error={errors.racaId?.message}>
               <Select
                 value={watch("racaId") || undefined}
-                onValueChange={(v) => setValue("racaId", v)}
+                onValueChange={(v) => setValue("racaId", v, { shouldValidate: true })}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  id="racaId"
+                  ref={(el) => {
+                    triggerRefs.current.racaId = el;
+                  }}
+                  className={invalidClass}
+                  aria-invalid={Boolean(errors.racaId) || undefined}
+                  aria-describedby={errors.racaId ? "racaId-error" : undefined}
+                >
                   <SelectValue
                     placeholder={especieId ? "Selecione" : "Escolha a espécie primeiro"}
                   />
@@ -199,12 +295,20 @@ function EditarPetPage() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Sexo*" error={errors.sexo?.message}>
+            <Field id="sexo" label="Sexo*" error={errors.sexo?.message}>
               <Select
                 value={watch("sexo")}
-                onValueChange={(v) => setValue("sexo", v as "macho" | "femea")}
+                onValueChange={(v) => setValue("sexo", v as "macho" | "femea", { shouldValidate: true })}
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  id="sexo"
+                  ref={(el) => {
+                    triggerRefs.current.sexo = el;
+                  }}
+                  className={invalidClass}
+                  aria-invalid={Boolean(errors.sexo) || undefined}
+                  aria-describedby={errors.sexo ? "sexo-error" : undefined}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,20 +317,48 @@ function EditarPetPage() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Cor" error={errors.cor?.message}>
-              <Input {...register("cor")} />
+            <Field id="cor" label="Cor" error={errors.cor?.message}>
+              <Input
+                id="cor"
+                {...register("cor")}
+                className={invalidClass}
+                aria-invalid={Boolean(errors.cor) || undefined}
+                aria-describedby={errors.cor ? "cor-error" : undefined}
+              />
             </Field>
-            <Field label="Peso (kg)" error={errors.pesoKg?.message}>
-              <Input type="number" step="0.1" {...register("pesoKg")} />
+            <Field id="pesoKg" label="Peso (kg)" error={errors.pesoKg?.message}>
+              <Input
+                id="pesoKg"
+                type="number"
+                step="0.1"
+                {...register("pesoKg")}
+                className={invalidClass}
+                aria-invalid={Boolean(errors.pesoKg) || undefined}
+                aria-describedby={errors.pesoKg ? "pesoKg-error" : undefined}
+              />
             </Field>
-            <Field label="Data de nascimento" error={errors.dataNascimento?.message}>
-              <Input type="date" {...register("dataNascimento")} />
+            <Field id="dataNascimento" label="Data de nascimento" error={errors.dataNascimento?.message}>
+              <Input
+                id="dataNascimento"
+                type="date"
+                {...register("dataNascimento")}
+                className={invalidClass}
+                aria-invalid={Boolean(errors.dataNascimento) || undefined}
+                aria-describedby={errors.dataNascimento ? "dataNascimento-error" : undefined}
+              />
             </Field>
-            <Field label="Data de falecimento" error={errors.dataFalecimento?.message}>
-              <Input type="date" {...register("dataFalecimento")} />
+            <Field id="dataFalecimento" label="Data de falecimento" error={errors.dataFalecimento?.message}>
+              <Input
+                id="dataFalecimento"
+                type="date"
+                {...register("dataFalecimento")}
+                className={invalidClass}
+                aria-invalid={Boolean(errors.dataFalecimento) || undefined}
+                aria-describedby={errors.dataFalecimento ? "dataFalecimento-error" : undefined}
+              />
             </Field>
             <div className="md:col-span-2 flex justify-end">
-              <Button type="submit">
+              <Button type="submit" disabled={isSubmitting}>
                 <Save className="mr-2 h-4 w-4" /> Salvar alterações
               </Button>
             </div>
@@ -238,19 +370,28 @@ function EditarPetPage() {
 }
 
 function Field({
+  id,
   label,
   error,
   children,
 }: {
+  id: string;
   label: string;
   error?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">{label}</Label>
       {children}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p id={`${id}-error`} role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
+
+// Silence unused import warning for `cn` when not needed.
+void cn;
