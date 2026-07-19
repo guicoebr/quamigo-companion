@@ -136,7 +136,7 @@ function PetDetalhe() {
                   {tutor.nome}
                 </Link>
                 <p className="text-muted-foreground">
-                  {tutor.email} • {tutor.endereco.cidade}/{tutor.endereco.uf}
+                  {tutor.email} • {formatCidadeUf(tutor.endereco.cidade, tutor.endereco.uf)}
                 </p>
               </div>
             ) : (
