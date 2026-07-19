@@ -247,14 +247,27 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
         toast.success("Tutor atualizado.");
         navigate({ to: "/tutores/$id", params: { id: existing.id } });
       } else {
+        if (createdTutorId) return;
         const novo = await createTutor({ data: payload });
-        toast.success("Tutor criado.");
-        navigate({ to: "/tutores/$id", params: { id: novo.id } });
+        toast.success("Tutor cadastrado com sucesso.");
+        setCreatedTutorId(novo.id);
       }
     } catch {
       toast.error("Não foi possível salvar o tutor.");
     }
   }
+
+  const handleCadastrarPet = () => {
+    if (!createdTutorId) return;
+    actionNavigationRef.current = true;
+    navigate({ to: "/pets/novo", search: { tutorId: createdTutorId } });
+  };
+
+  const handleVerTutor = () => {
+    if (!createdTutorId) return;
+    actionNavigationRef.current = true;
+    navigate({ to: "/tutores/$id", params: { id: createdTutorId } });
+  };
 
   return (
     <>
