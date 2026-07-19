@@ -77,11 +77,15 @@ export const Route = createFileRoute("/_app/pets/novo")({
 
 function NovoPetPage() {
   const navigate = useNavigate();
-  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { tutorId: preselectTutorId } = Route.useSearch();
+  const tutoresQuery = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const tutores = tutoresQuery.data ?? [];
   const { data: especies = [] } = useQuery({ queryKey: ["especies"], queryFn: () => listEspecies() });
   const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
   const [buscaTutor, setBuscaTutor] = useState("");
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
+  const [preselectFailed, setPreselectFailed] = useState(false);
+  const appliedPreselectRef = useRef(false);
 
   const tutorSearchInputRef = useRef<HTMLInputElement | null>(null);
   const triggerRefs = useRef<Partial<Record<FieldName, HTMLButtonElement | null>>>({});
