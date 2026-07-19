@@ -68,7 +68,7 @@ export function EspeciesRacasTab() {
   useEffect(() => {
     if (!especiesQuery.isSuccess || !especieId) return;
     if (!especies.some((e) => e.id === especieId)) {
-      navigate({ search: { especieId: undefined }, replace: true });
+      navigate({ to: "/configuracoes/especies", search: { especieId: undefined }, replace: true });
     }
   }, [especieId, especies, especiesQuery.isSuccess, navigate]);
 
