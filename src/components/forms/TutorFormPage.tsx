@@ -66,7 +66,7 @@ const schema = z.object({
       { message: "CEP inválido. Informe os 8 dígitos." },
     ),
   logradouro: z.string().optional().or(z.literal("")),
-  numero: z.string().optional().or(z.literal("")),
+  numero: z.string().trim().min(1, "Informe o número do endereço."),
   bairro: z.string().optional().or(z.literal("")),
   cidade: z.string().optional().or(z.literal("")),
   uf: z
@@ -373,7 +373,7 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
             <Field label="Endereço" error={errors.logradouro?.message}>
               <Input {...register("logradouro")} />
             </Field>
-            <Field label="Número" error={errors.numero?.message}>
+            <Field label="Número *" error={errors.numero?.message}>
               <Input {...register("numero")} />
             </Field>
             <Field label="Bairro" error={errors.bairro?.message}>
