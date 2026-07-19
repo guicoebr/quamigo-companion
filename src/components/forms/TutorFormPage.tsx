@@ -23,6 +23,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { getTutor, createTutor, updateTutor } from "@/lib/api/tutores.functions";
 
 const schema = z.object({
@@ -72,6 +80,8 @@ type FormValues = z.infer<typeof schema>;
 
 export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
   const navigate = useNavigate();
+  const [createdTutorId, setCreatedTutorId] = useState<string | null>(null);
+  const actionNavigationRef = useRef(false);
   const params = useParams({ strict: false }) as { id?: string };
   const { data: existing, isLoading } = useQuery({
     queryKey: ["tutor", params.id],
@@ -239,14 +249,27 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
         toast.success("Tutor atualizado.");
         navigate({ to: "/tutores/$id", params: { id: existing.id } });
       } else {
+        if (createdTutorId) return;
         const novo = await createTutor({ data: payload });
-        toast.success("Tutor criado.");
-        navigate({ to: "/tutores/$id", params: { id: novo.id } });
+        toast.success("Tutor cadastrado com sucesso.");
+        setCreatedTutorId(novo.id);
       }
     } catch {
       toast.error("Não foi possível salvar o tutor.");
     }
   }
+
+  const handleCadastrarPet = () => {
+    if (!createdTutorId) return;
+    actionNavigationRef.current = true;
+    navigate({ to: "/pets/novo", search: { tutorId: createdTutorId } });
+  };
+
+  const handleVerTutor = () => {
+    if (!createdTutorId) return;
+    actionNavigationRef.current = true;
+    navigate({ to: "/tutores/$id", params: { id: createdTutorId } });
+  };
 
   return (
     <>
@@ -368,13 +391,42 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               </Field>
             </div>
             <div className="md:col-span-2 flex justify-end gap-2">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || createdTutorId !== null}>
                 <Save className="mr-2 h-4 w-4" /> Salvar
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      {mode === "novo" && (
+        <Dialog
+          open={Boolean(createdTutorId)}
+          onOpenChange={(open) => {
+            if (open || !createdTutorId) return;
+            if (actionNavigationRef.current) return;
+            actionNavigationRef.current = true;
+            navigate({ to: "/tutores/$id", params: { id: createdTutorId } });
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Tutor cadastrado com sucesso.</DialogTitle>
+              <DialogDescription>
+                O que você deseja fazer agora?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button type="button" variant="outline" onClick={handleVerTutor}>
+                Ver tutor
+              </Button>
+              <Button type="button" onClick={handleCadastrarPet}>
+                Cadastrar pet deste tutor
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }

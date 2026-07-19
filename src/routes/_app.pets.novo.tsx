@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -63,18 +63,29 @@ const LABELS: Record<FieldName, string> = {
   dataNascimento: "Data de nascimento",
 };
 
+type PetsNovoSearch = { tutorId?: string };
+
 export const Route = createFileRoute("/_app/pets/novo")({
   head: () => ({ meta: [{ title: "Novo pet — +QAmigo" }] }),
+  validateSearch: (search: Record<string, unknown>): PetsNovoSearch => {
+    const raw = search.tutorId;
+    const tutorId = typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+    return tutorId ? { tutorId } : {};
+  },
   component: NovoPetPage,
 });
 
 function NovoPetPage() {
   const navigate = useNavigate();
-  const { data: tutores = [] } = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const { tutorId: preselectTutorId } = Route.useSearch();
+  const tutoresQuery = useQuery({ queryKey: ["tutores"], queryFn: () => listTutores() });
+  const tutores = tutoresQuery.data ?? [];
   const { data: especies = [] } = useQuery({ queryKey: ["especies"], queryFn: () => listEspecies() });
   const { data: racas = [] } = useQuery({ queryKey: ["racas"], queryFn: () => listRacas() });
   const [buscaTutor, setBuscaTutor] = useState("");
   const [hasSubmitAttempted, setHasSubmitAttempted] = useState(false);
+  const [preselectFailed, setPreselectFailed] = useState(false);
+  const appliedPreselectRef = useRef(false);
 
   const tutorSearchInputRef = useRef<HTMLInputElement | null>(null);
   const triggerRefs = useRef<Partial<Record<FieldName, HTMLButtonElement | null>>>({});
@@ -102,11 +113,37 @@ function NovoPetPage() {
   );
   const tutoresFiltrados = useMemo(() => {
     const t = buscaTutor.trim().toLowerCase();
-    if (!t) return tutores.slice(0, 6);
-    return tutores.filter(
-      (x) => x.nome.toLowerCase().includes(t) || x.email.toLowerCase().includes(t),
-    );
-  }, [tutores, buscaTutor]);
+    const base = !t
+      ? tutores.slice(0, 6)
+      : tutores.filter(
+          (x) => x.nome.toLowerCase().includes(t) || x.email.toLowerCase().includes(t),
+        );
+    // Garante que o tutor selecionado (inclusive vindo da URL) permaneça visível.
+    if (tutorId && !base.some((x) => x.id === tutorId)) {
+      const sel = tutores.find((x) => x.id === tutorId);
+      if (sel) return [sel, ...base];
+    }
+    return base;
+  }, [tutores, buscaTutor, tutorId]);
+
+  useEffect(() => {
+    if (!preselectTutorId) return;
+    if (appliedPreselectRef.current) return;
+    if (!tutoresQuery.isSuccess) return;
+    const found = (tutoresQuery.data ?? []).some((t) => t.id === preselectTutorId);
+    if (found) {
+      setValue("tutorId", preselectTutorId, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: true,
+      });
+      setPreselectFailed(false);
+    } else {
+      setPreselectFailed(true);
+    }
+    appliedPreselectRef.current = true;
+  }, [preselectTutorId, tutoresQuery.isSuccess, tutoresQuery.data, setValue]);
+
 
   const errorLabels = FIELD_ORDER
     .filter((field) => Boolean(errors[field]))
@@ -196,6 +233,11 @@ function NovoPetPage() {
                 aria-describedby={errors.tutorId ? "tutorId-error" : undefined}
               />
             </div>
+            {preselectFailed && (
+              <p className="text-xs text-muted-foreground">
+                Não foi possível pré-selecionar o tutor informado.
+              </p>
+            )}
             <div className="grid gap-2 sm:grid-cols-2">
               {tutoresFiltrados.map((t) => {
                 const sel = tutorId === t.id;
@@ -203,7 +245,10 @@ function NovoPetPage() {
                   <button
                     type="button"
                     key={t.id}
-                    onClick={() => setValue("tutorId", t.id, { shouldValidate: true })}
+                    onClick={() => {
+                      setValue("tutorId", t.id, { shouldValidate: true });
+                      setPreselectFailed(false);
+                    }}
                     className={cn(
                       "rounded-md border p-3 text-left transition-colors",
                       sel ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
