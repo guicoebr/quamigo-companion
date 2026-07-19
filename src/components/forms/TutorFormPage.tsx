@@ -103,7 +103,7 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
 
   async function onSubmit(values: FormValues) {
     const endereco = {
-      cep: (values.cep ?? "").replace(/\D/g, ""),
+      cep: unformatCep(values.cep ?? ""),
       logradouro: values.logradouro ?? "",
       numero: values.numero ?? "",
       bairro: values.bairro ?? "",
