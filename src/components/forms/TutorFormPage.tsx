@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useForm, Controller, type Control, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,11 +11,11 @@ import {
   unformatPhone,
   formatCep,
   unformatCep,
-  isValidCep,
 } from "@/lib/formatters";
+import { fetchViaCep } from "@/lib/viacep";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Search } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
