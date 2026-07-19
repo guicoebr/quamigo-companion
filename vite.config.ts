@@ -30,5 +30,12 @@ export default defineConfig({
         "expo-sqlite": new URL("./src/server/stubs/expo-sqlite.ts", import.meta.url).pathname,
       },
     },
+    ssr: {
+      resolve: {
+        conditions: ["node", "import", "module", "default"],
+        externalConditions: ["node", "import", "module", "default"],
+      },
+      noExternal: ["typeorm"],
+    },
   },
 });
