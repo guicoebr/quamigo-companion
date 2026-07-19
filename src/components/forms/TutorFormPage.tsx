@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useForm, Controller, type Control, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,9 +13,10 @@ import {
   unformatCep,
   isValidCep,
 } from "@/lib/formatters";
+import { fetchViaCep } from "@/lib/viacep";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useParams, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Search } from "lucide-react";
 import { PageHeader } from "@/components/cards/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -78,7 +80,16 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
   });
   if (mode === "editar" && !isLoading && !existing) throw notFound();
 
-  const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    getValues,
+    watch,
+    setFocus,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: existing
       ? {
@@ -100,6 +111,110 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
       : undefined,
     defaultValues: { contato1: "", nome: "" },
   });
+
+  // ===== ViaCEP: lookup automático de endereço =====
+  const abortRef = useRef<AbortController | null>(null);
+  const activeLookupCepRef = useRef<string | null>(null);
+  const hasHydratedExistingRef = useRef(mode === "novo");
+  const [cepStatus, setCepStatus] = useState<
+    "idle" | "loading" | "not_found" | "network_error"
+  >("idle");
+  const [lastLookedUpCep, setLastLookedUpCep] = useState<string | null>(null);
+
+  // Hidratação inicial (modo editar): registra o CEP salvo como já "consultado"
+  // para bloquear o disparo automático durante o load do tutor existente.
+  useEffect(() => {
+    if (hasHydratedExistingRef.current) return;
+    if (!existing) return;
+    const d = unformatCep(existing.endereco.cep);
+    if (d.length === 8) setLastLookedUpCep(d);
+    hasHydratedExistingRef.current = true;
+  }, [existing]);
+
+  // Cleanup ao desmontar: aborta qualquer requisição pendente.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  async function runLookup(cep8: string, opts: { force: boolean }) {
+    if (!hasHydratedExistingRef.current) return;
+    if (!opts.force && cepStatus === "loading") return;
+    if (!opts.force && cep8 === lastLookedUpCep) return;
+
+    // Cancela qualquer consulta anterior.
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    activeLookupCepRef.current = cep8;
+    setCepStatus("loading");
+
+    try {
+      const r = await fetchViaCep(cep8, ac.signal);
+      // Guard contra resposta obsoleta ou consulta cancelada.
+      if (abortRef.current !== ac || ac.signal.aborted) return;
+      if (r.status === "aborted") return;
+
+      if (r.status === "ok") {
+        if (r.logradouro)
+          setValue("logradouro", r.logradouro, { shouldDirty: true });
+        if (r.bairro) setValue("bairro", r.bairro, { shouldDirty: true });
+        if (r.cidade) setValue("cidade", r.cidade, { shouldDirty: true });
+        if (r.uf) setValue("uf", r.uf.toUpperCase(), { shouldDirty: true });
+        setLastLookedUpCep(cep8);
+        setCepStatus("idle");
+        setFocus("numero");
+      } else if (r.status === "not_found") {
+        setLastLookedUpCep(cep8);
+        setCepStatus("not_found");
+      } else {
+        // erro real (timeout/rede/HTTP inválido) — não fixa lastLookedUpCep,
+        // permitindo retry pelo botão "Buscar novamente".
+        setCepStatus("network_error");
+      }
+    } finally {
+      if (abortRef.current === ac) {
+        abortRef.current = null;
+        activeLookupCepRef.current = null;
+      }
+    }
+  }
+
+  // Observa mudanças no CEP: dispara consulta ao completar 8 dígitos e cancela
+  // consultas em andamento quando o valor difere do que está sendo consultado.
+  const cepValue = watch("cep");
+  useEffect(() => {
+    if (!hasHydratedExistingRef.current) return;
+    const d = unformatCep(cepValue ?? "");
+
+    // Se há uma consulta em andamento para outro CEP, cancela imediatamente.
+    if (
+      activeLookupCepRef.current !== null &&
+      d !== activeLookupCepRef.current
+    ) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      activeLookupCepRef.current = null;
+      setCepStatus("idle");
+    }
+
+    if (d.length === 8) {
+      if (d !== lastLookedUpCep && cepStatus !== "loading") {
+        void runLookup(d, { force: false });
+      }
+    } else {
+      // Menos de 8 dígitos: limpa mensagens antigas mas mantém campos preenchidos.
+      if (lastLookedUpCep !== null && d !== lastLookedUpCep) {
+        setLastLookedUpCep(null);
+      }
+      if (cepStatus === "not_found" || cepStatus === "network_error") {
+        setCepStatus("idle");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cepValue]);
+
 
   async function onSubmit(values: FormValues) {
     const endereco = {
@@ -193,13 +308,44 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
               />
             </Field>
             <Field label="CEP" error={errors.cep?.message}>
-              <MaskedInput
-                control={control}
-                name="cep"
-                mask={formatCep}
-                placeholder="00000-000"
-                inputMode="numeric"
-              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <MaskedInput
+                    control={control}
+                    name="cep"
+                    mask={formatCep}
+                    placeholder="00000-000"
+                    inputMode="numeric"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={unformatCep(cepValue ?? "").length !== 8}
+                  onClick={() =>
+                    void runLookup(unformatCep(getValues("cep") ?? ""), {
+                      force: true,
+                    })
+                  }
+                >
+                  <Search className="mr-1.5 h-3.5 w-3.5" />
+                  {cepStatus === "loading" ? "Buscar novamente" : "Buscar CEP"}
+                </Button>
+              </div>
+              {cepStatus === "loading" && (
+                <p className="text-xs text-muted-foreground">Buscando endereço…</p>
+              )}
+              {cepStatus === "not_found" && (
+                <p className="text-xs text-destructive">
+                  CEP não encontrado. Verifique os números informados ou preencha o endereço manualmente.
+                </p>
+              )}
+              {cepStatus === "network_error" && (
+                <p className="text-xs text-destructive">
+                  Não foi possível consultar o CEP agora. Preencha o endereço manualmente ou tente novamente.
+                </p>
+              )}
             </Field>
             <Field label="Endereço" error={errors.logradouro?.message}>
               <Input {...register("logradouro")} />
