@@ -66,7 +66,7 @@ const schema = z.object({
       { message: "CEP inválido. Informe os 8 dígitos." },
     ),
   logradouro: z.string().optional().or(z.literal("")),
-  numero: z.string().optional().or(z.literal("")),
+  numero: z.string().trim().min(1, "Informe o número do endereço."),
   bairro: z.string().optional().or(z.literal("")),
   cidade: z.string().optional().or(z.literal("")),
   uf: z
