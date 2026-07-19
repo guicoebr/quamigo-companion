@@ -35,4 +35,23 @@ export function formatCEP(cep: string): string {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
+/**
+ * Formata cidade e UF preservando a caixa original do texto.
+ * - cidade + uf → "Cidade/UF"
+ * - só cidade  → "Cidade"
+ * - só uf      → "UF"
+ * - nenhum     → "—"
+ */
+export function formatCidadeUf(
+  cidade?: string | null,
+  uf?: string | null,
+): string {
+  const c = (cidade ?? "").trim();
+  const u = (uf ?? "").trim();
+  if (c && u) return `${c}/${u}`;
+  if (c) return c;
+  if (u) return u;
+  return "—";
+}
+
 // Numeração de OS/PG/CT agora é atômica no servidor — ver src/server/numbering.server.ts.
