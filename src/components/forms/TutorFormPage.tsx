@@ -80,6 +80,8 @@ type FormValues = z.infer<typeof schema>;
 
 export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
   const navigate = useNavigate();
+  const [createdTutorId, setCreatedTutorId] = useState<string | null>(null);
+  const actionNavigationRef = useRef(false);
   const params = useParams({ strict: false }) as { id?: string };
   const { data: existing, isLoading } = useQuery({
     queryKey: ["tutor", params.id],
