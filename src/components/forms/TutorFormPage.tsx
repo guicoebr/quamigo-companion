@@ -89,7 +89,7 @@ export function TutorFormPage({ mode }: { mode: "novo" | "editar" }) {
           contato1: formatPhone(existing.telefone),
           contato2: "",
           contato3: "",
-          cep: existing.endereco.cep,
+          cep: formatCep(existing.endereco.cep),
           logradouro: existing.endereco.logradouro,
           numero: existing.endereco.numero,
           bairro: existing.endereco.bairro,
