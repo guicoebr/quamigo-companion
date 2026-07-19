@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -88,11 +88,17 @@ function RegistrarObitoPage() {
     observacoes: "",
   });
   const [buscaTutor, setBuscaTutor] = useState("");
+  const tutorAreaRef = useRef<HTMLDivElement | null>(null);
+  const petAreaRef = useRef<HTMLDivElement | null>(null);
 
   const tutorSelecionado = tutores.find((t) => t.id === form.tutorId);
-  const petsDisponiveis = useMemo(
-    () => pets.filter((p) => p.tutorId === form.tutorId && !p.dataFalecimento),
+  const petsDoTutor = useMemo(
+    () => pets.filter((p) => p.tutorId === form.tutorId),
     [pets, form.tutorId],
+  );
+  const petsDisponiveis = useMemo(
+    () => petsDoTutor.filter((p) => !p.dataFalecimento),
+    [petsDoTutor],
   );
   const itensSelecionados = useMemo(
     () => servicosProdutos.filter((s) => form.itensIds.includes(s.id)),
@@ -133,7 +139,15 @@ function RegistrarObitoPage() {
   }
 
   function next() {
-    if (validate(step)) setStep((s) => Math.min(4, s + 1));
+    const currentStep = step;
+    if (validate(currentStep)) {
+      setStep((s) => Math.min(4, s + 1));
+    } else {
+      requestAnimationFrame(() => {
+        const target = currentStep === 1 ? tutorAreaRef.current : currentStep === 2 ? petAreaRef.current : null;
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
   }
   function back() {
     setErrors({});
@@ -208,7 +222,7 @@ function RegistrarObitoPage() {
       <Card className="rounded-[12px]">
         <CardContent className="p-6">
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-4" ref={tutorAreaRef}>
               <Label>Buscar tutor</Label>
               <Input
                 value={buscaTutor}
@@ -222,7 +236,13 @@ function RegistrarObitoPage() {
                     <button
                       type="button"
                       key={t.id}
-                      onClick={() => setForm((f) => ({ ...f, tutorId: t.id, petId: "" }))}
+                      onClick={() => {
+                        setForm((f) => ({ ...f, tutorId: t.id, petId: "" }));
+                        setErrors((prev) => {
+                          const { tutorId: _t, petId: _p, ...rest } = prev;
+                          return rest;
+                        });
+                      }}
                       className={cn(
                         "rounded-md border p-3 text-left transition-colors",
                         sel ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
@@ -239,7 +259,11 @@ function RegistrarObitoPage() {
                   <p className="text-sm text-muted-foreground">Nenhum tutor encontrado.</p>
                 )}
               </div>
-              {errors.tutorId && <p className="text-sm text-destructive">{errors.tutorId}</p>}
+              {errors.tutorId && (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.tutorId}
+                </p>
+              )}
               {/* TODO(api): formulário "Novo tutor" + busca no backend. */}
             </div>
           )}
@@ -253,13 +277,29 @@ function RegistrarObitoPage() {
               )}
               {tutorSelecionado && (
                 <>
-                  <div>
+                  <div ref={petAreaRef}>
                     <Label className="mb-2 block">
                       Pet falecido — tutor: {tutorSelecionado.nome}
                     </Label>
-                    {petsDisponiveis.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Este tutor não possui pets vivos cadastrados.
+                    {petsDoTutor.length === 0 ? (
+                      <div className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm">
+                        <p className="text-muted-foreground">
+                          Este tutor ainda não possui pets cadastrados.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => navigate({ to: "/pets/novo" })}
+                        >
+                          Cadastrar pet
+                        </Button>
+                      </div>
+                    ) : petsDisponiveis.length === 0 ? (
+                      <p className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        Este tutor não possui pets disponíveis para este registro. Todos os pets
+                        cadastrados já constam como falecidos.
                       </p>
                     ) : (
                       <div className="grid gap-2 sm:grid-cols-2">
@@ -269,7 +309,13 @@ function RegistrarObitoPage() {
                             <button
                               type="button"
                               key={p.id}
-                              onClick={() => setForm((f) => ({ ...f, petId: p.id }))}
+                              onClick={() => {
+                                setForm((f) => ({ ...f, petId: p.id }));
+                                setErrors((prev) => {
+                                  const { petId: _p, ...rest } = prev;
+                                  return rest;
+                                });
+                              }}
                               className={cn(
                                 "flex items-center gap-3 rounded-md border p-3 text-left transition-colors",
                                 sel
@@ -290,9 +336,12 @@ function RegistrarObitoPage() {
                       </div>
                     )}
                     {errors.petId && (
-                      <p className="mt-2 text-sm text-destructive">{errors.petId}</p>
+                      <p className="mt-2 text-sm text-destructive" role="alert">
+                        {errors.petId}
+                      </p>
                     )}
                   </div>
+
 
                   <div>
                     <Label htmlFor="dataFalecimento">Data do óbito</Label>
