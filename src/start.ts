@@ -1,12 +1,12 @@
 import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 // (removido) import de attachSupabaseAuth — não usar; o projeto não tem credenciais Supabase.
 // Supabase auth is not used in this project (auth is handled by TypeORM/Postgres).
 // The Supabase bearer middleware must not be registered here: it would try to
 // instantiate the Supabase client on every Server Function call and fail because
 // the project has no Supabase credentials configured.
+
 
 // ============================================================================
 // DIAG-ONLY (temporário). Observação secundária: o erro pode ser encapsulado
