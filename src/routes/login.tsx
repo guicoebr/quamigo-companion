@@ -66,13 +66,19 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const result = await login(email, password);
-    setLoading(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      const result = await login(email, password);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      await navigate({ to: resolvePostLoginTarget(search.redirect, result.user.role) });
+    } catch (loginError) {
+      console.error(loginError);
+      setError("Não foi possível entrar. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
-    navigate({ to: resolvePostLoginTarget(search.redirect, result.user.role) });
   }
 
   return (
