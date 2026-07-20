@@ -38,9 +38,55 @@ function sessionConfig(): SessionConfig {
   };
 }
 
+// ============================================================================
+// DIAG-ONLY (temporário). Locais, não lançam.
+// ============================================================================
+function _diagNormalizeCause(cause: unknown): unknown {
+  if (cause instanceof Error) return { name: cause.name, message: cause.message, stack: cause.stack };
+  if (typeof cause === "string") return cause;
+  return cause == null ? null : String(cause);
+}
+function diag(step: string, extra: Record<string, unknown> = {}) {
+  try { console.log(JSON.stringify({ diag: "login", ts: new Date().toISOString(), step, ...extra })); }
+  catch { try { console.error("diag-log-failed", step); } catch { /* noop */ } }
+}
+function diagErr(step: string, err: unknown) {
+  try {
+    const e = err as {
+      name?: string; message?: string; code?: unknown; cause?: unknown;
+      severity?: unknown; routine?: unknown; detail?: unknown; schema?: unknown;
+      table?: unknown; constraint?: unknown; sqlState?: unknown; state?: unknown;
+      errno?: unknown; syscall?: unknown; address?: unknown; port?: unknown;
+      hostname?: unknown; stack?: unknown;
+    } | null | undefined;
+    console.error(JSON.stringify({
+      diag: "login", ts: new Date().toISOString(), step,
+      err: {
+        name: e?.name ?? null, message: e?.message ?? String(err),
+        code: e?.code ?? null, cause: _diagNormalizeCause(e?.cause),
+        severity: e?.severity ?? null, routine: e?.routine ?? null,
+        detail: e?.detail ?? null, schema: e?.schema ?? null,
+        table: e?.table ?? null, constraint: e?.constraint ?? null,
+        sqlState: e?.sqlState ?? e?.state ?? null,
+        errno: e?.errno ?? null, syscall: e?.syscall ?? null,
+        address: e?.address ?? null, port: e?.port ?? null, hostname: e?.hostname ?? null,
+        stack: e?.stack ?? null,
+      },
+    }));
+  } catch { try { console.error("diag-err-log-failed", step); } catch { /* noop */ } }
+}
+// ============================================================================
+
 export async function createUserSession(userId: string): Promise<void> {
-  const session = await getSessionManager<QamigoSessionData>(sessionConfig());
-  await session.update({ userId });
+  diag("createUserSession ANTES");
+  try {
+    const session = await getSessionManager<QamigoSessionData>(sessionConfig());
+    await session.update({ userId });
+  } catch (error) {
+    diagErr("createUserSession INNER FAIL", error);
+    throw error;
+  }
+  diag("createUserSession DEPOIS");
 }
 
 export async function destroyUserSession(): Promise<void> {
