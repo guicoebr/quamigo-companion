@@ -65,15 +65,6 @@ export default defineConfig({
       ],
     },
     ssr: {
-      // Workers do not have a runtime node_modules directory. Bundle the
-      // PostgreSQL driver and the packages it loads with the server output.
-      noExternal: [
-        "pg",
-        "pg-protocol",
-        "pg-types",
-        "pg-connection-string",
-        "pgpass",
-      ],
       resolve: {
         conditions: ["node", "import", "module", "default"],
         externalConditions: ["node", "import", "module", "default"],
