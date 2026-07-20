@@ -1,7 +1,6 @@
 import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 // Supabase auth is not used in this project (auth is handled by TypeORM/Postgres).
 // Importing attachSupabaseAuth would crash the browser bundle when SUPABASE env vars
 // are absent, blocking every serverFn call (including /login).
@@ -42,6 +41,5 @@ const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
   requestMiddleware: [errorMiddleware],
 }));
