@@ -17,6 +17,19 @@ import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 // the raw "YYYY-MM-DD" string Postgres sends — matches the entities/DTOs exactly, no Date-object
 // surprises, no timezone conversion to get wrong.
 pg.types.setTypeParser(1082, (value) => value);
+
+// No runtime Cloudflare Workers, `require('pg-native')` é resolvido para um
+// stub em vez de lançar MODULE_NOT_FOUND. Isso faz o getter `native` do `pg`
+// escapar do próprio try/catch e o TypeORM tenta `new Native(...)` durante
+// `PostgresDriver.loadDependencies()`, gerando "Native is not a constructor".
+// Passamos ao TypeORM um Proxy que esconde exclusivamente a propriedade
+// `native`, sem alterar nenhuma outra API do pacote.
+const pgDriver: typeof pg = new Proxy(pg, {
+  get(target, property) {
+    if (property === "native") return undefined;
+    return Reflect.get(target, property, target);
+  },
+});
 import {
   Especie,
   Raca,
