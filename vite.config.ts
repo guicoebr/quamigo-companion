@@ -52,6 +52,16 @@ export default defineConfig({
           find: /^tinyglobby$/,
           replacement: new URL("./src/server/stubs/tinyglobby.mjs", import.meta.url).pathname,
         },
+        {
+          // pg's CommonJS stream adapter requires pg-cloudflare as a default
+          // object, while the package's Worker ESM entry only exports the
+          // named CloudflareSocket class. Normalize both export shapes.
+          find: /^pg-cloudflare$/,
+          replacement: new URL(
+            "./src/server/stubs/pg-cloudflare.mjs",
+            import.meta.url,
+          ).pathname,
+        },
       ],
     },
     ssr: {
