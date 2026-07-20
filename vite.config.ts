@@ -52,18 +52,19 @@ export default defineConfig({
           find: /^tinyglobby$/,
           replacement: new URL("./src/server/stubs/tinyglobby.mjs", import.meta.url).pathname,
         },
+        {
+          // pg's CommonJS stream adapter requires pg-cloudflare as a default
+          // object, while the package's Worker ESM entry only exports the
+          // named CloudflareSocket class. Normalize both export shapes.
+          find: /^pg-cloudflare$/,
+          replacement: new URL(
+            "./src/server/stubs/pg-cloudflare.mjs",
+            import.meta.url,
+          ).pathname,
+        },
       ],
     },
     ssr: {
-      // Workers do not have a runtime node_modules directory. Bundle the
-      // PostgreSQL driver and the packages it loads with the server output.
-      noExternal: [
-        "pg",
-        "pg-protocol",
-        "pg-types",
-        "pg-connection-string",
-        "pgpass",
-      ],
       resolve: {
         conditions: ["node", "import", "module", "default"],
         externalConditions: ["node", "import", "module", "default"],
