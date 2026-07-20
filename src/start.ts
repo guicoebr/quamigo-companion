@@ -7,6 +7,7 @@ import { renderErrorPage } from "./lib/error-page";
 // instantiate the Supabase client on every Server Function call and fail because
 // the project has no Supabase credentials configured.
 
+
 // ============================================================================
 // DIAG-ONLY (temporário). Observação secundária: o erro pode ser encapsulado
 // no envelope Seroval pela server-fn antes de chegar aqui. Nunca lança.
