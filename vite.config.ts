@@ -20,6 +20,18 @@ export default defineConfig({
     cloudflare: {
       nodeCompat: true,
     },
+    // Workers do not have a runtime node_modules directory. Keep the
+    // PostgreSQL driver and the packages it loads inside the published
+    // server bundle instead of externalizing them.
+    externals: {
+      inline: [
+        "pg",
+        "pg-protocol",
+        "pg-types",
+        "pg-connection-string",
+        "pgpass",
+      ],
+    },
   },
   vite: {
     plugins: [
