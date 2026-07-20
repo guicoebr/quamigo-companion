@@ -47,6 +47,10 @@ function databaseUrl(): string {
  * só via migration versionada. */
 export const AppDataSource = new DataSource({
   type: "postgres",
+  // Pass the statically imported driver explicitly. TypeORM otherwise tries
+  // to discover `pg` with a runtime require(), which is unavailable after the
+  // production Worker bundle has been assembled.
+  driver: pg,
   url: databaseUrl(),
   // Railway's public proxy (rlwy.net) presents a self-signed cert. Accept it
   // when DATABASE_SSL isn't explicitly disabled.
