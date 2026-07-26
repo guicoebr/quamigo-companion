@@ -81,7 +81,12 @@ function LoginPage() {
       await navigate({ to: resolvePostLoginTarget(search.redirect, result.user.role) });
     } catch (loginError) {
       console.error(loginError);
-      setError("Não foi possível entrar. Tente novamente.");
+      const message = loginError instanceof Error ? loginError.message.toLowerCase() : "";
+      setError(
+        message.includes("missing supabase environment")
+          ? "O acesso está temporariamente indisponível por uma falha de configuração. Tente novamente em alguns minutos."
+          : "Não foi possível entrar. Tente novamente.",
+      );
     } finally {
       setLoading(false);
     }
