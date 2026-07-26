@@ -9,49 +9,53 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppTutoresRouteImport } from './routes/_app.tutores'
-import { Route as AppServicosProdutosRouteImport } from './routes/_app.servicos-produtos'
-import { Route as AppPetsRouteImport } from './routes/_app.pets'
-import { Route as AppPagamentosRouteImport } from './routes/_app.pagamentos'
-import { Route as AppOrdensServicoRouteImport } from './routes/_app.ordens-servico'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppContratosRouteImport } from './routes/_app.contratos'
-import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
 import { Route as AppBrandBookRouteImport } from './routes/_app.brand-book'
-import { Route as AppTutoresIndexRouteImport } from './routes/_app.tutores.index'
-import { Route as AppServicosProdutosIndexRouteImport } from './routes/_app.servicos-produtos.index'
-import { Route as AppPetsIndexRouteImport } from './routes/_app.pets.index'
-import { Route as AppPagamentosIndexRouteImport } from './routes/_app.pagamentos.index'
-import { Route as AppOrdensServicoIndexRouteImport } from './routes/_app.ordens-servico.index'
-import { Route as AppContratosIndexRouteImport } from './routes/_app.contratos.index'
+import { Route as AppConfiguracoesRouteImport } from './routes/_app.configuracoes'
+import { Route as AppContratosRouteImport } from './routes/_app.contratos'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppOrdensServicoRouteImport } from './routes/_app.ordens-servico'
+import { Route as AppPagamentosRouteImport } from './routes/_app.pagamentos'
+import { Route as AppPetsRouteImport } from './routes/_app.pets'
+import { Route as AppServicosProdutosRouteImport } from './routes/_app.servicos-produtos'
+import { Route as AppTutoresRouteImport } from './routes/_app.tutores'
 import { Route as AppConfiguracoesIndexRouteImport } from './routes/_app.configuracoes.index'
-import { Route as AppTutoresNovoRouteImport } from './routes/_app.tutores.novo'
-import { Route as AppTutoresIdRouteImport } from './routes/_app.tutores.$id'
-import { Route as AppServicosProdutosNovoRouteImport } from './routes/_app.servicos-produtos.novo'
-import { Route as AppPetsNovoRouteImport } from './routes/_app.pets.novo'
-import { Route as AppPetsIdRouteImport } from './routes/_app.pets.$id'
-import { Route as AppPagamentosIdRouteImport } from './routes/_app.pagamentos.$id'
-import { Route as AppOrdensServicoIdRouteImport } from './routes/_app.ordens-servico.$id'
-import { Route as AppObitosNovoRouteImport } from './routes/_app.obitos.novo'
-import { Route as AppContratosNovoRouteImport } from './routes/_app.contratos.novo'
-import { Route as AppContratosIdRouteImport } from './routes/_app.contratos.$id'
-import { Route as AppConfiguracoesUsuariosRouteImport } from './routes/_app.configuracoes.usuarios'
-import { Route as AppConfiguracoesRacasRouteImport } from './routes/_app.configuracoes.racas'
-import { Route as AppConfiguracoesModalidadesRouteImport } from './routes/_app.configuracoes.modalidades'
 import { Route as AppConfiguracoesEspeciesRouteImport } from './routes/_app.configuracoes.especies'
-import { Route as AppTutoresIdIndexRouteImport } from './routes/_app.tutores.$id.index'
+import { Route as AppConfiguracoesModalidadesRouteImport } from './routes/_app.configuracoes.modalidades'
+import { Route as AppConfiguracoesRacasRouteImport } from './routes/_app.configuracoes.racas'
+import { Route as AppConfiguracoesUsuariosRouteImport } from './routes/_app.configuracoes.usuarios'
+import { Route as AppContratosIndexRouteImport } from './routes/_app.contratos.index'
+import { Route as AppContratosIdRouteImport } from './routes/_app.contratos.$id'
+import { Route as AppContratosNovoRouteImport } from './routes/_app.contratos.novo'
+import { Route as AppObitosNovoRouteImport } from './routes/_app.obitos.novo'
+import { Route as AppOrdensServicoIndexRouteImport } from './routes/_app.ordens-servico.index'
+import { Route as AppOrdensServicoIdRouteImport } from './routes/_app.ordens-servico.$id'
+import { Route as AppPagamentosIndexRouteImport } from './routes/_app.pagamentos.index'
+import { Route as AppPagamentosIdRouteImport } from './routes/_app.pagamentos.$id'
+import { Route as AppPetsIndexRouteImport } from './routes/_app.pets.index'
+import { Route as AppPetsIdRouteImport } from './routes/_app.pets.$id'
+import { Route as AppPetsNovoRouteImport } from './routes/_app.pets.novo'
+import { Route as AppServicosProdutosIndexRouteImport } from './routes/_app.servicos-produtos.index'
+import { Route as AppServicosProdutosNovoRouteImport } from './routes/_app.servicos-produtos.novo'
+import { Route as AppTutoresIndexRouteImport } from './routes/_app.tutores.index'
+import { Route as AppTutoresIdRouteImport } from './routes/_app.tutores.$id'
+import { Route as AppTutoresNovoRouteImport } from './routes/_app.tutores.novo'
 import { Route as AppPetsIdIndexRouteImport } from './routes/_app.pets.$id.index'
-import { Route as AppTutoresIdEditarRouteImport } from './routes/_app.tutores.$id.editar'
-import { Route as AppServicosProdutosIdEditarRouteImport } from './routes/_app.servicos-produtos.$id.editar'
 import { Route as AppPetsIdEditarRouteImport } from './routes/_app.pets.$id.editar'
+import { Route as AppServicosProdutosIdEditarRouteImport } from './routes/_app.servicos-produtos.$id.editar'
+import { Route as AppTutoresIdIndexRouteImport } from './routes/_app.tutores.$id.index'
+import { Route as AppTutoresIdEditarRouteImport } from './routes/_app.tutores.$id.editar'
 
-const UnauthorizedRoute = UnauthorizedRouteImport.update({
-  id: '/unauthorized',
-  path: '/unauthorized',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -59,48 +63,14 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const UnauthorizedRoute = UnauthorizedRouteImport.update({
+  id: '/unauthorized',
+  path: '/unauthorized',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppTutoresRoute = AppTutoresRouteImport.update({
-  id: '/tutores',
-  path: '/tutores',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppServicosProdutosRoute = AppServicosProdutosRouteImport.update({
-  id: '/servicos-produtos',
-  path: '/servicos-produtos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPetsRoute = AppPetsRouteImport.update({
-  id: '/pets',
-  path: '/pets',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPagamentosRoute = AppPagamentosRouteImport.update({
-  id: '/pagamentos',
-  path: '/pagamentos',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppOrdensServicoRoute = AppOrdensServicoRouteImport.update({
-  id: '/ordens-servico',
-  path: '/ordens-servico',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppContratosRoute = AppContratosRouteImport.update({
-  id: '/contratos',
-  path: '/contratos',
+const AppBrandBookRoute = AppBrandBookRouteImport.update({
+  id: '/brand-book',
+  path: '/brand-book',
   getParentRoute: () => AppRoute,
 } as any)
 const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
@@ -108,101 +78,56 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
-const AppBrandBookRoute = AppBrandBookRouteImport.update({
-  id: '/brand-book',
-  path: '/brand-book',
+const AppContratosRoute = AppContratosRouteImport.update({
+  id: '/contratos',
+  path: '/contratos',
   getParentRoute: () => AppRoute,
 } as any)
-const AppTutoresIndexRoute = AppTutoresIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppTutoresRoute,
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppServicosProdutosIndexRoute =
-  AppServicosProdutosIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppServicosProdutosRoute,
-  } as any)
-const AppPetsIndexRoute = AppPetsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppPetsRoute,
+const AppOrdensServicoRoute = AppOrdensServicoRouteImport.update({
+  id: '/ordens-servico',
+  path: '/ordens-servico',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppPagamentosIndexRoute = AppPagamentosIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppPagamentosRoute,
+const AppPagamentosRoute = AppPagamentosRouteImport.update({
+  id: '/pagamentos',
+  path: '/pagamentos',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppOrdensServicoIndexRoute = AppOrdensServicoIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppOrdensServicoRoute,
+const AppPetsRoute = AppPetsRouteImport.update({
+  id: '/pets',
+  path: '/pets',
+  getParentRoute: () => AppRoute,
 } as any)
-const AppContratosIndexRoute = AppContratosIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppContratosRoute,
+const AppServicosProdutosRoute = AppServicosProdutosRouteImport.update({
+  id: '/servicos-produtos',
+  path: '/servicos-produtos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTutoresRoute = AppTutoresRouteImport.update({
+  id: '/tutores',
+  path: '/tutores',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppConfiguracoesIndexRoute = AppConfiguracoesIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppConfiguracoesRoute,
 } as any)
-const AppTutoresNovoRoute = AppTutoresNovoRouteImport.update({
-  id: '/novo',
-  path: '/novo',
-  getParentRoute: () => AppTutoresRoute,
-} as any)
-const AppTutoresIdRoute = AppTutoresIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppTutoresRoute,
-} as any)
-const AppServicosProdutosNovoRoute = AppServicosProdutosNovoRouteImport.update({
-  id: '/novo',
-  path: '/novo',
-  getParentRoute: () => AppServicosProdutosRoute,
-} as any)
-const AppPetsNovoRoute = AppPetsNovoRouteImport.update({
-  id: '/novo',
-  path: '/novo',
-  getParentRoute: () => AppPetsRoute,
-} as any)
-const AppPetsIdRoute = AppPetsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppPetsRoute,
-} as any)
-const AppPagamentosIdRoute = AppPagamentosIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppPagamentosRoute,
-} as any)
-const AppOrdensServicoIdRoute = AppOrdensServicoIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppOrdensServicoRoute,
-} as any)
-const AppObitosNovoRoute = AppObitosNovoRouteImport.update({
-  id: '/obitos/novo',
-  path: '/obitos/novo',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppContratosNovoRoute = AppContratosNovoRouteImport.update({
-  id: '/novo',
-  path: '/novo',
-  getParentRoute: () => AppContratosRoute,
-} as any)
-const AppContratosIdRoute = AppContratosIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppContratosRoute,
-} as any)
-const AppConfiguracoesUsuariosRoute =
-  AppConfiguracoesUsuariosRouteImport.update({
-    id: '/usuarios',
-    path: '/usuarios',
+const AppConfiguracoesEspeciesRoute =
+  AppConfiguracoesEspeciesRouteImport.update({
+    id: '/especies',
+    path: '/especies',
+    getParentRoute: () => AppConfiguracoesRoute,
+  } as any)
+const AppConfiguracoesModalidadesRoute =
+  AppConfiguracoesModalidadesRouteImport.update({
+    id: '/modalidades',
+    path: '/modalidades',
     getParentRoute: () => AppConfiguracoesRoute,
   } as any)
 const AppConfiguracoesRacasRoute = AppConfiguracoesRacasRouteImport.update({
@@ -210,32 +135,102 @@ const AppConfiguracoesRacasRoute = AppConfiguracoesRacasRouteImport.update({
   path: '/racas',
   getParentRoute: () => AppConfiguracoesRoute,
 } as any)
-const AppConfiguracoesModalidadesRoute =
-  AppConfiguracoesModalidadesRouteImport.update({
-    id: '/modalidades',
-    path: '/modalidades',
+const AppConfiguracoesUsuariosRoute =
+  AppConfiguracoesUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
     getParentRoute: () => AppConfiguracoesRoute,
   } as any)
-const AppConfiguracoesEspeciesRoute =
-  AppConfiguracoesEspeciesRouteImport.update({
-    id: '/especies',
-    path: '/especies',
-    getParentRoute: () => AppConfiguracoesRoute,
-  } as any)
-const AppTutoresIdIndexRoute = AppTutoresIdIndexRouteImport.update({
+const AppContratosIndexRoute = AppContratosIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppTutoresIdRoute,
+  getParentRoute: () => AppContratosRoute,
+} as any)
+const AppContratosIdRoute = AppContratosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppContratosRoute,
+} as any)
+const AppContratosNovoRoute = AppContratosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AppContratosRoute,
+} as any)
+const AppObitosNovoRoute = AppObitosNovoRouteImport.update({
+  id: '/obitos/novo',
+  path: '/obitos/novo',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrdensServicoIndexRoute = AppOrdensServicoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppOrdensServicoRoute,
+} as any)
+const AppOrdensServicoIdRoute = AppOrdensServicoIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppOrdensServicoRoute,
+} as any)
+const AppPagamentosIndexRoute = AppPagamentosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppPagamentosRoute,
+} as any)
+const AppPagamentosIdRoute = AppPagamentosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppPagamentosRoute,
+} as any)
+const AppPetsIndexRoute = AppPetsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppPetsRoute,
+} as any)
+const AppPetsIdRoute = AppPetsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppPetsRoute,
+} as any)
+const AppPetsNovoRoute = AppPetsNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AppPetsRoute,
+} as any)
+const AppServicosProdutosIndexRoute =
+  AppServicosProdutosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppServicosProdutosRoute,
+  } as any)
+const AppServicosProdutosNovoRoute = AppServicosProdutosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AppServicosProdutosRoute,
+} as any)
+const AppTutoresIndexRoute = AppTutoresIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppTutoresRoute,
+} as any)
+const AppTutoresIdRoute = AppTutoresIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppTutoresRoute,
+} as any)
+const AppTutoresNovoRoute = AppTutoresNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AppTutoresRoute,
 } as any)
 const AppPetsIdIndexRoute = AppPetsIdIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppPetsIdRoute,
 } as any)
-const AppTutoresIdEditarRoute = AppTutoresIdEditarRouteImport.update({
+const AppPetsIdEditarRoute = AppPetsIdEditarRouteImport.update({
   id: '/editar',
   path: '/editar',
-  getParentRoute: () => AppTutoresIdRoute,
+  getParentRoute: () => AppPetsIdRoute,
 } as any)
 const AppServicosProdutosIdEditarRoute =
   AppServicosProdutosIdEditarRouteImport.update({
@@ -243,10 +238,15 @@ const AppServicosProdutosIdEditarRoute =
     path: '/$id/editar',
     getParentRoute: () => AppServicosProdutosRoute,
   } as any)
-const AppPetsIdEditarRoute = AppPetsIdEditarRouteImport.update({
+const AppTutoresIdIndexRoute = AppTutoresIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppTutoresIdRoute,
+} as any)
+const AppTutoresIdEditarRoute = AppTutoresIdEditarRouteImport.update({
   id: '/editar',
   path: '/editar',
-  getParentRoute: () => AppPetsIdRoute,
+  getParentRoute: () => AppTutoresIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -486,18 +486,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/unauthorized': {
-      id: '/unauthorized'
-      path: '/unauthorized'
-      fullPath: '/unauthorized'
-      preLoaderRoute: typeof UnauthorizedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -507,60 +500,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/tutores': {
-      id: '/_app/tutores'
-      path: '/tutores'
-      fullPath: '/tutores'
-      preLoaderRoute: typeof AppTutoresRouteImport
-      parentRoute: typeof AppRoute
+    '/unauthorized': {
+      id: '/unauthorized'
+      path: '/unauthorized'
+      fullPath: '/unauthorized'
+      preLoaderRoute: typeof UnauthorizedRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_app/servicos-produtos': {
-      id: '/_app/servicos-produtos'
-      path: '/servicos-produtos'
-      fullPath: '/servicos-produtos'
-      preLoaderRoute: typeof AppServicosProdutosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/pets': {
-      id: '/_app/pets'
-      path: '/pets'
-      fullPath: '/pets'
-      preLoaderRoute: typeof AppPetsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/pagamentos': {
-      id: '/_app/pagamentos'
-      path: '/pagamentos'
-      fullPath: '/pagamentos'
-      preLoaderRoute: typeof AppPagamentosRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ordens-servico': {
-      id: '/_app/ordens-servico'
-      path: '/ordens-servico'
-      fullPath: '/ordens-servico'
-      preLoaderRoute: typeof AppOrdensServicoRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/contratos': {
-      id: '/_app/contratos'
-      path: '/contratos'
-      fullPath: '/contratos'
-      preLoaderRoute: typeof AppContratosRouteImport
+    '/_app/brand-book': {
+      id: '/_app/brand-book'
+      path: '/brand-book'
+      fullPath: '/brand-book'
+      preLoaderRoute: typeof AppBrandBookRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/configuracoes': {
@@ -570,151 +528,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/brand-book': {
-      id: '/_app/brand-book'
-      path: '/brand-book'
-      fullPath: '/brand-book'
-      preLoaderRoute: typeof AppBrandBookRouteImport
+    '/_app/contratos': {
+      id: '/_app/contratos'
+      path: '/contratos'
+      fullPath: '/contratos'
+      preLoaderRoute: typeof AppContratosRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/tutores/': {
-      id: '/_app/tutores/'
-      path: '/'
-      fullPath: '/tutores/'
-      preLoaderRoute: typeof AppTutoresIndexRouteImport
-      parentRoute: typeof AppTutoresRoute
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/servicos-produtos/': {
-      id: '/_app/servicos-produtos/'
-      path: '/'
-      fullPath: '/servicos-produtos/'
-      preLoaderRoute: typeof AppServicosProdutosIndexRouteImport
-      parentRoute: typeof AppServicosProdutosRoute
+    '/_app/ordens-servico': {
+      id: '/_app/ordens-servico'
+      path: '/ordens-servico'
+      fullPath: '/ordens-servico'
+      preLoaderRoute: typeof AppOrdensServicoRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/pets/': {
-      id: '/_app/pets/'
-      path: '/'
-      fullPath: '/pets/'
-      preLoaderRoute: typeof AppPetsIndexRouteImport
-      parentRoute: typeof AppPetsRoute
+    '/_app/pagamentos': {
+      id: '/_app/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/pagamentos'
+      preLoaderRoute: typeof AppPagamentosRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/pagamentos/': {
-      id: '/_app/pagamentos/'
-      path: '/'
-      fullPath: '/pagamentos/'
-      preLoaderRoute: typeof AppPagamentosIndexRouteImport
-      parentRoute: typeof AppPagamentosRoute
+    '/_app/pets': {
+      id: '/_app/pets'
+      path: '/pets'
+      fullPath: '/pets'
+      preLoaderRoute: typeof AppPetsRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/ordens-servico/': {
-      id: '/_app/ordens-servico/'
-      path: '/'
-      fullPath: '/ordens-servico/'
-      preLoaderRoute: typeof AppOrdensServicoIndexRouteImport
-      parentRoute: typeof AppOrdensServicoRoute
+    '/_app/servicos-produtos': {
+      id: '/_app/servicos-produtos'
+      path: '/servicos-produtos'
+      fullPath: '/servicos-produtos'
+      preLoaderRoute: typeof AppServicosProdutosRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/_app/contratos/': {
-      id: '/_app/contratos/'
-      path: '/'
-      fullPath: '/contratos/'
-      preLoaderRoute: typeof AppContratosIndexRouteImport
-      parentRoute: typeof AppContratosRoute
+    '/_app/tutores': {
+      id: '/_app/tutores'
+      path: '/tutores'
+      fullPath: '/tutores'
+      preLoaderRoute: typeof AppTutoresRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/configuracoes/': {
       id: '/_app/configuracoes/'
       path: '/'
       fullPath: '/configuracoes/'
       preLoaderRoute: typeof AppConfiguracoesIndexRouteImport
-      parentRoute: typeof AppConfiguracoesRoute
-    }
-    '/_app/tutores/novo': {
-      id: '/_app/tutores/novo'
-      path: '/novo'
-      fullPath: '/tutores/novo'
-      preLoaderRoute: typeof AppTutoresNovoRouteImport
-      parentRoute: typeof AppTutoresRoute
-    }
-    '/_app/tutores/$id': {
-      id: '/_app/tutores/$id'
-      path: '/$id'
-      fullPath: '/tutores/$id'
-      preLoaderRoute: typeof AppTutoresIdRouteImport
-      parentRoute: typeof AppTutoresRoute
-    }
-    '/_app/servicos-produtos/novo': {
-      id: '/_app/servicos-produtos/novo'
-      path: '/novo'
-      fullPath: '/servicos-produtos/novo'
-      preLoaderRoute: typeof AppServicosProdutosNovoRouteImport
-      parentRoute: typeof AppServicosProdutosRoute
-    }
-    '/_app/pets/novo': {
-      id: '/_app/pets/novo'
-      path: '/novo'
-      fullPath: '/pets/novo'
-      preLoaderRoute: typeof AppPetsNovoRouteImport
-      parentRoute: typeof AppPetsRoute
-    }
-    '/_app/pets/$id': {
-      id: '/_app/pets/$id'
-      path: '/$id'
-      fullPath: '/pets/$id'
-      preLoaderRoute: typeof AppPetsIdRouteImport
-      parentRoute: typeof AppPetsRoute
-    }
-    '/_app/pagamentos/$id': {
-      id: '/_app/pagamentos/$id'
-      path: '/$id'
-      fullPath: '/pagamentos/$id'
-      preLoaderRoute: typeof AppPagamentosIdRouteImport
-      parentRoute: typeof AppPagamentosRoute
-    }
-    '/_app/ordens-servico/$id': {
-      id: '/_app/ordens-servico/$id'
-      path: '/$id'
-      fullPath: '/ordens-servico/$id'
-      preLoaderRoute: typeof AppOrdensServicoIdRouteImport
-      parentRoute: typeof AppOrdensServicoRoute
-    }
-    '/_app/obitos/novo': {
-      id: '/_app/obitos/novo'
-      path: '/obitos/novo'
-      fullPath: '/obitos/novo'
-      preLoaderRoute: typeof AppObitosNovoRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/contratos/novo': {
-      id: '/_app/contratos/novo'
-      path: '/novo'
-      fullPath: '/contratos/novo'
-      preLoaderRoute: typeof AppContratosNovoRouteImport
-      parentRoute: typeof AppContratosRoute
-    }
-    '/_app/contratos/$id': {
-      id: '/_app/contratos/$id'
-      path: '/$id'
-      fullPath: '/contratos/$id'
-      preLoaderRoute: typeof AppContratosIdRouteImport
-      parentRoute: typeof AppContratosRoute
-    }
-    '/_app/configuracoes/usuarios': {
-      id: '/_app/configuracoes/usuarios'
-      path: '/usuarios'
-      fullPath: '/configuracoes/usuarios'
-      preLoaderRoute: typeof AppConfiguracoesUsuariosRouteImport
-      parentRoute: typeof AppConfiguracoesRoute
-    }
-    '/_app/configuracoes/racas': {
-      id: '/_app/configuracoes/racas'
-      path: '/racas'
-      fullPath: '/configuracoes/racas'
-      preLoaderRoute: typeof AppConfiguracoesRacasRouteImport
-      parentRoute: typeof AppConfiguracoesRoute
-    }
-    '/_app/configuracoes/modalidades': {
-      id: '/_app/configuracoes/modalidades'
-      path: '/modalidades'
-      fullPath: '/configuracoes/modalidades'
-      preLoaderRoute: typeof AppConfiguracoesModalidadesRouteImport
       parentRoute: typeof AppConfiguracoesRoute
     }
     '/_app/configuracoes/especies': {
@@ -724,12 +591,138 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesEspeciesRouteImport
       parentRoute: typeof AppConfiguracoesRoute
     }
-    '/_app/tutores/$id/': {
-      id: '/_app/tutores/$id/'
+    '/_app/configuracoes/modalidades': {
+      id: '/_app/configuracoes/modalidades'
+      path: '/modalidades'
+      fullPath: '/configuracoes/modalidades'
+      preLoaderRoute: typeof AppConfiguracoesModalidadesRouteImport
+      parentRoute: typeof AppConfiguracoesRoute
+    }
+    '/_app/configuracoes/racas': {
+      id: '/_app/configuracoes/racas'
+      path: '/racas'
+      fullPath: '/configuracoes/racas'
+      preLoaderRoute: typeof AppConfiguracoesRacasRouteImport
+      parentRoute: typeof AppConfiguracoesRoute
+    }
+    '/_app/configuracoes/usuarios': {
+      id: '/_app/configuracoes/usuarios'
+      path: '/usuarios'
+      fullPath: '/configuracoes/usuarios'
+      preLoaderRoute: typeof AppConfiguracoesUsuariosRouteImport
+      parentRoute: typeof AppConfiguracoesRoute
+    }
+    '/_app/contratos/': {
+      id: '/_app/contratos/'
       path: '/'
-      fullPath: '/tutores/$id/'
-      preLoaderRoute: typeof AppTutoresIdIndexRouteImport
-      parentRoute: typeof AppTutoresIdRoute
+      fullPath: '/contratos/'
+      preLoaderRoute: typeof AppContratosIndexRouteImport
+      parentRoute: typeof AppContratosRoute
+    }
+    '/_app/contratos/$id': {
+      id: '/_app/contratos/$id'
+      path: '/$id'
+      fullPath: '/contratos/$id'
+      preLoaderRoute: typeof AppContratosIdRouteImport
+      parentRoute: typeof AppContratosRoute
+    }
+    '/_app/contratos/novo': {
+      id: '/_app/contratos/novo'
+      path: '/novo'
+      fullPath: '/contratos/novo'
+      preLoaderRoute: typeof AppContratosNovoRouteImport
+      parentRoute: typeof AppContratosRoute
+    }
+    '/_app/obitos/novo': {
+      id: '/_app/obitos/novo'
+      path: '/obitos/novo'
+      fullPath: '/obitos/novo'
+      preLoaderRoute: typeof AppObitosNovoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ordens-servico/': {
+      id: '/_app/ordens-servico/'
+      path: '/'
+      fullPath: '/ordens-servico/'
+      preLoaderRoute: typeof AppOrdensServicoIndexRouteImport
+      parentRoute: typeof AppOrdensServicoRoute
+    }
+    '/_app/ordens-servico/$id': {
+      id: '/_app/ordens-servico/$id'
+      path: '/$id'
+      fullPath: '/ordens-servico/$id'
+      preLoaderRoute: typeof AppOrdensServicoIdRouteImport
+      parentRoute: typeof AppOrdensServicoRoute
+    }
+    '/_app/pagamentos/': {
+      id: '/_app/pagamentos/'
+      path: '/'
+      fullPath: '/pagamentos/'
+      preLoaderRoute: typeof AppPagamentosIndexRouteImport
+      parentRoute: typeof AppPagamentosRoute
+    }
+    '/_app/pagamentos/$id': {
+      id: '/_app/pagamentos/$id'
+      path: '/$id'
+      fullPath: '/pagamentos/$id'
+      preLoaderRoute: typeof AppPagamentosIdRouteImport
+      parentRoute: typeof AppPagamentosRoute
+    }
+    '/_app/pets/': {
+      id: '/_app/pets/'
+      path: '/'
+      fullPath: '/pets/'
+      preLoaderRoute: typeof AppPetsIndexRouteImport
+      parentRoute: typeof AppPetsRoute
+    }
+    '/_app/pets/$id': {
+      id: '/_app/pets/$id'
+      path: '/$id'
+      fullPath: '/pets/$id'
+      preLoaderRoute: typeof AppPetsIdRouteImport
+      parentRoute: typeof AppPetsRoute
+    }
+    '/_app/pets/novo': {
+      id: '/_app/pets/novo'
+      path: '/novo'
+      fullPath: '/pets/novo'
+      preLoaderRoute: typeof AppPetsNovoRouteImport
+      parentRoute: typeof AppPetsRoute
+    }
+    '/_app/servicos-produtos/': {
+      id: '/_app/servicos-produtos/'
+      path: '/'
+      fullPath: '/servicos-produtos/'
+      preLoaderRoute: typeof AppServicosProdutosIndexRouteImport
+      parentRoute: typeof AppServicosProdutosRoute
+    }
+    '/_app/servicos-produtos/novo': {
+      id: '/_app/servicos-produtos/novo'
+      path: '/novo'
+      fullPath: '/servicos-produtos/novo'
+      preLoaderRoute: typeof AppServicosProdutosNovoRouteImport
+      parentRoute: typeof AppServicosProdutosRoute
+    }
+    '/_app/tutores/': {
+      id: '/_app/tutores/'
+      path: '/'
+      fullPath: '/tutores/'
+      preLoaderRoute: typeof AppTutoresIndexRouteImport
+      parentRoute: typeof AppTutoresRoute
+    }
+    '/_app/tutores/$id': {
+      id: '/_app/tutores/$id'
+      path: '/$id'
+      fullPath: '/tutores/$id'
+      preLoaderRoute: typeof AppTutoresIdRouteImport
+      parentRoute: typeof AppTutoresRoute
+    }
+    '/_app/tutores/novo': {
+      id: '/_app/tutores/novo'
+      path: '/novo'
+      fullPath: '/tutores/novo'
+      preLoaderRoute: typeof AppTutoresNovoRouteImport
+      parentRoute: typeof AppTutoresRoute
     }
     '/_app/pets/$id/': {
       id: '/_app/pets/$id/'
@@ -738,12 +731,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPetsIdIndexRouteImport
       parentRoute: typeof AppPetsIdRoute
     }
-    '/_app/tutores/$id/editar': {
-      id: '/_app/tutores/$id/editar'
+    '/_app/pets/$id/editar': {
+      id: '/_app/pets/$id/editar'
       path: '/editar'
-      fullPath: '/tutores/$id/editar'
-      preLoaderRoute: typeof AppTutoresIdEditarRouteImport
-      parentRoute: typeof AppTutoresIdRoute
+      fullPath: '/pets/$id/editar'
+      preLoaderRoute: typeof AppPetsIdEditarRouteImport
+      parentRoute: typeof AppPetsIdRoute
     }
     '/_app/servicos-produtos/$id/editar': {
       id: '/_app/servicos-produtos/$id/editar'
@@ -752,12 +745,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServicosProdutosIdEditarRouteImport
       parentRoute: typeof AppServicosProdutosRoute
     }
-    '/_app/pets/$id/editar': {
-      id: '/_app/pets/$id/editar'
+    '/_app/tutores/$id/': {
+      id: '/_app/tutores/$id/'
+      path: '/'
+      fullPath: '/tutores/$id/'
+      preLoaderRoute: typeof AppTutoresIdIndexRouteImport
+      parentRoute: typeof AppTutoresIdRoute
+    }
+    '/_app/tutores/$id/editar': {
+      id: '/_app/tutores/$id/editar'
       path: '/editar'
-      fullPath: '/pets/$id/editar'
-      preLoaderRoute: typeof AppPetsIdEditarRouteImport
-      parentRoute: typeof AppPetsIdRoute
+      fullPath: '/tutores/$id/editar'
+      preLoaderRoute: typeof AppTutoresIdEditarRouteImport
+      parentRoute: typeof AppTutoresIdRoute
     }
   }
 }
