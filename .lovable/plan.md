@@ -1,9 +1,10 @@
-O número da OS já vem prefixado (ex.: `OS-2026-00001`), e o `PageHeader` acrescenta outro "OS" na frente, resultando em "OS OS-2026-00001".
+Adicionar botão "olhinho" (mostrar/ocultar senha) ao campo de senha da tela de login.
 
-## Mudanças
+## Mudança
 
-**src/routes/_app.ordens-servico.$id.tsx**
-- Linha 113: trocar `title={`OS ${os.numero}`}` por `title={os.numero}`.
-- Linha 29 (head/title da aba): trocar `` `OS ${params.id} — +QAmigo` `` por `` `${params.id} — +QAmigo` `` para manter consistência.
+**src/routes/login.tsx**
+- Adicionar estado `showPassword` (boolean, inicial `false`).
+- Envolver o `Input` da senha em um wrapper `relative`, alterando `type` para `showPassword ? "text" : "password"`, com `pr-10` para dar espaço ao botão.
+- Adicionar `<button type="button">` posicionado à direita (absolute), alternando `showPassword` no clique. Ícone `Eye` / `EyeOff` do `lucide-react`, `aria-label` dinâmico ("Mostrar senha" / "Ocultar senha"), `tabIndex={-1}` opcional para não interferir no tab.
 
-Nenhuma outra tela é afetada.
+Nenhuma outra tela usa campo de senha no momento, então o escopo fica restrito ao login.
