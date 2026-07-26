@@ -1,64 +1,68 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getDataSource } from "@/server/data-source";
-import { Usuario as UsuarioEntity } from "@/server/entities";
-import { hashPassword } from "@/server/auth.server";
-import { requirePermission } from "@/server/session.server";
-import type { UsuarioAdmin } from "@/types/auth";
-
-function toUsuarioDTO(u: UsuarioEntity): UsuarioAdmin {
-  return {
-    id: u.id,
-    nome: u.nome,
-    email: u.email,
-    role: u.role,
-    ativo: u.ativo,
-    criadoEm: u.criadoEm.toISOString(),
-  };
-}
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { UsuarioAdmin, Role } from "@/types/auth";
 
 const roleEnum = z.enum(["admin", "operacional", "financeiro", "recepcao"]);
 
-export const listUsuarios = createServerFn({ method: "GET" }).handler(
-  async (): Promise<UsuarioAdmin[]> => {
-    await requirePermission("config.gerenciar");
-    const ds = await getDataSource();
-    const usuarios = await ds.getRepository(UsuarioEntity).find({ order: { nome: "ASC" } });
-    return usuarios.map(toUsuarioDTO);
-  },
-);
+/**
+ * Lista usuários combinando `profiles` + `user_roles`.
+ * Cada usuário mostra o primeiro papel encontrado (o schema permite N, mas o
+ * app usa 1 por usuário).
+ */
+export const listUsuarios = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<UsuarioAdmin[]> => {
+    const [{ data: profiles, error: pErr }, { data: roles, error: rErr }] = await Promise.all([
+      context.supabase
+        .from("profiles")
+        .select("id, nome, email, ativo, criado_em")
+        .order("nome"),
+      context.supabase.from("user_roles").select("user_id, role"),
+    ]);
+    if (pErr) throw new Error(pErr.message);
+    if (rErr) throw new Error(rErr.message);
+    const roleByUser = new Map<string, Role>();
+    (roles ?? []).forEach((r) => {
+      if (!roleByUser.has(r.user_id)) roleByUser.set(r.user_id, r.role as Role);
+    });
+    return (profiles ?? []).map((p) => ({
+      id: p.id,
+      nome: p.nome,
+      email: p.email,
+      role: (roleByUser.get(p.id) ?? "recepcao") as Role,
+      ativo: p.ativo,
+      criadoEm: p.criado_em,
+    }));
+  });
 
+/**
+ * Criação de novo usuário requer service role (auth admin) e está temporariamente
+ * indisponível pela UI — enquanto isso o admin pode criar contas pela área de
+ * admin do Lovable Cloud.
+ */
 export const createUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
       nome: z.string().min(2),
       email: z.string().email(),
       role: roleEnum,
-      senha: z.string().min(6, "Senha com pelo menos 6 caracteres."),
+      senha: z.string().min(6),
     }),
   )
-  .handler(async ({ data }): Promise<UsuarioAdmin> => {
-    await requirePermission("config.gerenciar");
-    const ds = await getDataSource();
-    const repo = ds.getRepository(UsuarioEntity);
-
-    const email = data.email.toLowerCase();
-    const jaExiste = await repo.findOneBy({ email });
-    if (jaExiste) throw new Error("Já existe um usuário com este e-mail.");
-
-    const saved = await repo.save(
-      repo.create({
-        nome: data.nome,
-        email,
-        role: data.role,
-        ativo: true,
-        senhaHash: await hashPassword(data.senha),
-      }),
+  .handler(async (): Promise<UsuarioAdmin> => {
+    throw new Error(
+      "Cadastro de novo usuário indisponível temporariamente. Peça ao administrador.",
     );
-    return toUsuarioDTO(saved);
   });
 
+/**
+ * Atualiza nome/ativo em `profiles` e substitui o papel em `user_roles`.
+ * Não altera e-mail nem senha (isso passa pelo Supabase Auth).
+ */
 export const updateUsuario = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
       id: z.string().uuid(),
@@ -71,43 +75,66 @@ export const updateUsuario = createServerFn({ method: "POST" })
       }),
     }),
   )
-  .handler(async ({ data }): Promise<UsuarioAdmin> => {
-    const atual = await requirePermission("config.gerenciar");
-    const ds = await getDataSource();
-    const repo = ds.getRepository(UsuarioEntity);
+  .handler(async ({ data, context }): Promise<UsuarioAdmin> => {
+    const { nome, ativo, role } = data.patch;
 
-    const alvo = await repo.findOneBy({ id: data.id });
-    if (!alvo) throw new Error("Usuário não encontrado.");
-
-    const { novaSenha, email, ...resto } = data.patch;
-    const desativando = resto.ativo === false && alvo.ativo;
-    const rebaixando = resto.role !== undefined && resto.role !== "admin" && alvo.role === "admin";
-
-    // Evita lock-out imediato: a sessão relê o usuário do banco a cada request,
-    // então se desativar/rebaixar derrubaria o próprio admin na hora.
-    if (alvo.id === atual.id && (desativando || rebaixando)) {
-      throw new Error("Você não pode desativar ou rebaixar o próprio usuário.");
+    // Não permite se desativar / se rebaixar
+    if (context.userId === data.id) {
+      if (ativo === false) throw new Error("Você não pode desativar o próprio usuário.");
+      if (role && role !== "admin") throw new Error("Você não pode rebaixar o próprio usuário.");
     }
-    if ((desativando || rebaixando) && alvo.role === "admin" && alvo.ativo) {
-      const adminsAtivos = await repo.count({ where: { role: "admin", ativo: true } });
-      if (adminsAtivos <= 1) {
+
+    // Garante que não estamos removendo o último admin
+    if (role && role !== "admin") {
+      const { data: adminRoles } = await context.supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      const admins = (adminRoles ?? []).map((r) => r.user_id);
+      if (admins.length <= 1 && admins.includes(data.id)) {
         throw new Error("Não é possível remover o último administrador ativo.");
       }
     }
 
-    const emailNormalizado = email?.toLowerCase();
-    if (emailNormalizado && emailNormalizado !== alvo.email) {
-      const duplicado = await repo.findOneBy({ email: emailNormalizado });
-      if (duplicado) throw new Error("Já existe um usuário com este e-mail.");
+    if (nome !== undefined || ativo !== undefined) {
+      const profilePatch: Record<string, unknown> = {};
+      if (nome !== undefined) profilePatch.nome = nome;
+      if (ativo !== undefined) profilePatch.ativo = ativo;
+      const { error } = await context.supabase
+        .from("profiles")
+        .update(profilePatch as never)
+        .eq("id", data.id);
+      if (error) throw new Error(error.message);
     }
 
-    const mudancas = {
-      ...resto,
-      ...(emailNormalizado && { email: emailNormalizado }),
-      ...(novaSenha && { senhaHash: await hashPassword(novaSenha) }),
-    };
-    if (Object.keys(mudancas).length > 0) {
-      await repo.update(alvo.id, mudancas);
+    if (role !== undefined) {
+      // Apaga papéis atuais e insere o novo — modelo de "papel único" da UI.
+      const { error: delErr } = await context.supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", data.id);
+      if (delErr) throw new Error(delErr.message);
+      const { error: insErr } = await context.supabase
+        .from("user_roles")
+        .insert({ user_id: data.id, role });
+      if (insErr) throw new Error(insErr.message);
     }
-    return toUsuarioDTO(await repo.findOneByOrFail({ id: alvo.id }));
+
+    const [{ data: profile }, { data: roles }] = await Promise.all([
+      context.supabase
+        .from("profiles")
+        .select("id, nome, email, ativo, criado_em")
+        .eq("id", data.id)
+        .single(),
+      context.supabase.from("user_roles").select("role").eq("user_id", data.id),
+    ]);
+    if (!profile) throw new Error("Usuário não encontrado.");
+    return {
+      id: profile.id,
+      nome: profile.nome,
+      email: profile.email,
+      role: ((roles?.[0]?.role as Role) ?? "recepcao") as Role,
+      ativo: profile.ativo,
+      criadoEm: profile.criado_em,
+    };
   });

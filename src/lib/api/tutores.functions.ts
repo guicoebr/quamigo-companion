@@ -1,11 +1,26 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getDataSource } from "@/server/data-source";
-import { Tutor as TutorEntity } from "@/server/entities";
-import { requireAuth, requirePermission } from "@/server/session.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Tutor } from "@/types/tutor";
 
-function toTutorDTO(t: TutorEntity): Tutor {
+type TutorRow = {
+  id: string;
+  nome: string;
+  cpf: string;
+  email: string;
+  telefone: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string | null;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  observacoes: string | null;
+  criado_em: string;
+};
+
+function toTutorDTO(t: TutorRow): Tutor {
   return {
     id: t.id,
     nome: t.nome,
@@ -22,26 +37,35 @@ function toTutorDTO(t: TutorEntity): Tutor {
       uf: t.uf,
     },
     observacoes: t.observacoes ?? undefined,
-    criadoEm: t.criadoEm.toISOString(),
+    criadoEm: t.criado_em,
   };
 }
 
-// Lista completa — a busca por nome/CPF/e-mail já é feita no client (mesmo padrão do mock;
-// volume de tutores de uma funerária não justifica paginação/busca no servidor ainda).
-export const listTutores = createServerFn({ method: "GET" }).handler(async (): Promise<Tutor[]> => {
-  await requireAuth();
-  const ds = await getDataSource();
-  const tutores = await ds.getRepository(TutorEntity).find({ order: { nome: "ASC" } });
-  return tutores.map(toTutorDTO);
-});
+const TUTOR_COLS =
+  "id, nome, cpf, email, telefone, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes, criado_em";
+
+export const listTutores = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Tutor[]> => {
+    const { data, error } = await context.supabase
+      .from("tutores")
+      .select(TUTOR_COLS)
+      .order("nome");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => toTutorDTO(r as TutorRow));
+  });
 
 export const getTutor = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ id: z.string().uuid() }))
-  .handler(async ({ data }): Promise<Tutor | null> => {
-    await requireAuth();
-    const ds = await getDataSource();
-    const tutor = await ds.getRepository(TutorEntity).findOneBy({ id: data.id });
-    return tutor ? toTutorDTO(tutor) : null;
+  .handler(async ({ data, context }): Promise<Tutor | null> => {
+    const { data: row, error } = await context.supabase
+      .from("tutores")
+      .select(TUTOR_COLS)
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return row ? toTutorDTO(row as TutorRow) : null;
   });
 
 const enderecoInput = z.object({
@@ -63,68 +87,65 @@ const tutorInput = z.object({
   observacoes: z.string().optional(),
 });
 
-function translateUniqueViolation(err: unknown): never {
-  const e = err as { code?: string; detail?: string; message?: string };
-  if (e?.code === "23505") {
-    const detail = e.detail ?? e.message ?? "";
+function translateSupabaseError(err: { code?: string; message?: string; details?: string | null }): never {
+  const detail = (err.details ?? err.message ?? "").toString();
+  if (err.code === "23505") {
     if (/cpf/i.test(detail)) throw new Error("Já existe um tutor cadastrado com este CPF.");
     if (/email/i.test(detail)) throw new Error("Já existe um tutor cadastrado com este e-mail.");
     throw new Error("Já existe um tutor com estes dados.");
   }
-  throw err as Error;
+  throw new Error(err.message || "Erro ao salvar tutor.");
 }
 
 export const createTutor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(tutorInput)
-  .handler(async ({ data }): Promise<Tutor> => {
-    await requirePermission("tutor.criar");
-    const ds = await getDataSource();
-    try {
-      const saved = await ds.getRepository(TutorEntity).save(
-        ds.getRepository(TutorEntity).create({
-          nome: data.nome,
-          cpf: data.cpf.replace(/\D/g, ""),
-          email: data.email,
-          telefone: data.telefone.replace(/\D/g, ""),
-          cep: data.endereco.cep.replace(/\D/g, ""),
-          logradouro: data.endereco.logradouro,
-          numero: data.endereco.numero,
-          complemento: data.endereco.complemento || null,
-          bairro: data.endereco.bairro,
-          cidade: data.endereco.cidade,
-          uf: data.endereco.uf.toUpperCase(),
-          observacoes: data.observacoes || null,
-        }),
-      );
-      return toTutorDTO(saved);
-    } catch (err) {
-      translateUniqueViolation(err);
-    }
+  .handler(async ({ data, context }): Promise<Tutor> => {
+    const { data: row, error } = await context.supabase
+      .from("tutores")
+      .insert({
+        nome: data.nome,
+        cpf: data.cpf.replace(/\D/g, ""),
+        email: data.email,
+        telefone: data.telefone.replace(/\D/g, ""),
+        cep: data.endereco.cep.replace(/\D/g, ""),
+        logradouro: data.endereco.logradouro,
+        numero: data.endereco.numero,
+        complemento: data.endereco.complemento || null,
+        bairro: data.endereco.bairro,
+        cidade: data.endereco.cidade,
+        uf: data.endereco.uf.toUpperCase(),
+        observacoes: data.observacoes || null,
+      })
+      .select(TUTOR_COLS)
+      .single();
+    if (error) translateSupabaseError(error);
+    return toTutorDTO(row as TutorRow);
   });
 
 export const updateTutor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ id: z.string().uuid(), patch: tutorInput.partial() }))
-  .handler(async ({ data }): Promise<Tutor> => {
-    await requirePermission("tutor.editar");
-    const ds = await getDataSource();
+  .handler(async ({ data, context }): Promise<Tutor> => {
     const { endereco, ...rest } = data.patch;
-    try {
-      await ds.getRepository(TutorEntity).update(data.id, {
-        ...rest,
-        cpf: rest.cpf ? rest.cpf.replace(/\D/g, "") : undefined,
-        telefone: rest.telefone ? rest.telefone.replace(/\D/g, "") : undefined,
-        ...(endereco && {
-          cep: endereco.cep.replace(/\D/g, ""),
-          logradouro: endereco.logradouro,
-          numero: endereco.numero,
-          complemento: endereco.complemento || null,
-          bairro: endereco.bairro,
-          cidade: endereco.cidade,
-          uf: endereco.uf.toUpperCase(),
-        }),
-      });
-    } catch (err) {
-      translateUniqueViolation(err);
+    const patch: Record<string, unknown> = { ...rest };
+    if (rest.cpf) patch.cpf = rest.cpf.replace(/\D/g, "");
+    if (rest.telefone) patch.telefone = rest.telefone.replace(/\D/g, "");
+    if (endereco) {
+      patch.cep = endereco.cep.replace(/\D/g, "");
+      patch.logradouro = endereco.logradouro;
+      patch.numero = endereco.numero;
+      patch.complemento = endereco.complemento || null;
+      patch.bairro = endereco.bairro;
+      patch.cidade = endereco.cidade;
+      patch.uf = endereco.uf.toUpperCase();
     }
-    return toTutorDTO(await ds.getRepository(TutorEntity).findOneByOrFail({ id: data.id }));
+    const { data: row, error } = await context.supabase
+      .from("tutores")
+      .update(patch as never)
+      .eq("id", data.id)
+      .select(TUTOR_COLS)
+      .single();
+    if (error) translateSupabaseError(error);
+    return toTutorDTO(row as TutorRow);
   });
