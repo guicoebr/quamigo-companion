@@ -110,7 +110,7 @@ function OSDetalhe() {
   return (
     <>
       <PageHeader
-        title={`OS ${os.numero}`}
+        title={os.numero}
         description={`Criada em ${formatDate(os.criadoEm)} • atualizada em ${formatDate(os.atualizadoEm)}`}
         actions={
           <Button asChild variant="outline">
