@@ -26,7 +26,7 @@ import { STATUS_OS_FLOW, STATUS_OS_META, nextStatus, prevStatus } from "@/lib/os
 import { formatBRL, formatDate, formatDateTime } from "@/lib/formatters";
 
 export const Route = createFileRoute("/_app/ordens-servico/$id")({
-  head: ({ params }) => ({ meta: [{ title: `OS ${params.id} — +QAmigo` }] }),
+  head: ({ params }) => ({ meta: [{ title: `${params.id} — +QAmigo` }] }),
   loader: async ({ params }: { params: { id: string } }) => {
     const os = await getOS({ data: { id: params.id } }).catch(() => null);
     if (!os) throw notFound();
