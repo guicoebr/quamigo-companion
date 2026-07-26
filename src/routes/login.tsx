@@ -43,8 +43,13 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [clientReady, setClientReady] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
 
   useEffect(() => {
     if (!hydrated) {
@@ -141,9 +146,14 @@ function LoginPage() {
                   {error}
                 </p>
               )}
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={!clientReady || loading}
+                aria-busy={loading}
+              >
                 <LogIn className="mr-2 h-4 w-4" />
-                {loading ? "Entrando..." : "Entrar"}
+                {!clientReady ? "Carregando..." : loading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
           </CardContent>
