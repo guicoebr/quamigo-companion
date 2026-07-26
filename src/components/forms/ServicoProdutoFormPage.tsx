@@ -95,7 +95,7 @@ export function ServicoProdutoFormPage({ mode }: { mode: "novo" | "editar" }) {
               <Input {...register("nome")} />
             </Field>
             <Field label="Tipo*" error={errors.tipo?.message}>
-              <Select defaultValue={watch("tipo")} onValueChange={(v) => setValue("tipo", v as "servico" | "produto")}>
+              <Select value={watch("tipo")} onValueChange={(v) => setValue("tipo", v as "servico" | "produto", { shouldDirty: true })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="servico">Serviço</SelectItem>
