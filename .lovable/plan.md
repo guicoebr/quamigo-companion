@@ -1,76 +1,65 @@
-Migração completa do backend: Postgres da Railway + TypeORM + auth próprio → Lovable Cloud (Supabase) + Supabase Auth. Entrega única.
+## Contexto
 
-## Resumo do que muda
+O erro de login no `www` vem do driver `pg` falhando handshake TLS contra o proxy da Railway no runtime da Cloudflare (já diagnosticado nas rodadas anteriores). Como o schema e todos os dados **já foram migrados** para o Lovable Cloud (Fases 1 e 2 concluídas nesta sessão) e os 4 usuários já existem no Auth com os mesmos UUIDs, o próximo passo é substituir o código que ainda fala com Railway/pg pelo cliente Supabase. Isso remove o driver problemático e o login volta a funcionar em preview **e** publicado.
 
-- Banco: Railway → Supabase (mesma modelagem, mesmos UUIDs, políticas RLS por role).
-- Auth: `usuarios` + bcrypt + cookie selado → Supabase Auth (email/senha) + tabelas `profiles` e `user_roles`.
-- Server functions: TypeORM `Repository` → Supabase client (`requireSupabaseAuth`).
-- Runtime: some do `pg`, `pg-cloudflare`, `typeorm`, `bcryptjs`, stubs `patch-dist`, alias custom em `vite.config.ts`, `SESSION_SECRET`, `DATABASE_URL`.
+## Escopo desta entrega
 
-## Fase 1 — Schema no Supabase (uma migration)
+Reescrever a camada de dados e de autenticação para Supabase, sem alterar UI/regras de negócio visíveis ao usuário. Nada muda na aparência das telas.
 
-Criar no `public`:
+### 1. Autenticação (destrava o login no www)
+- `src/store/authStore.ts`: `login`/`logout`/`hydrate` passam a usar `supabase.auth.signInWithPassword`, `signOut`, `getSession` + leitura de `profiles` e `user_roles` para montar o `User` (id, nome, email, role).
+- `src/routes/login.tsx`: chamar diretamente `supabase.auth.signInWithPassword`; remover dependência da server function customizada.
+- `src/routes/__root.tsx` / `src/routes/_app.tsx`: hidratar sessão via `supabase.auth.getSession()` e escutar `onAuthStateChange` para invalidar rotas.
+- Sair de vez do fluxo de cookie httpOnly custom (`src/server/auth.server.ts`, `session.server.ts`) — a sessão passa a ser gerida pelo Supabase no `localStorage`.
 
-- Enum `app_role` = `admin | operacional | financeiro | recepcao`.
-- `profiles` (id = `auth.users.id`, nome, ativo, criado_em). Trigger `handle_new_user()` em `auth.users` cria a profile automaticamente.
-- `user_roles` (user_id → auth.users, role app_role, unique(user_id, role)).
-- Função `has_role(_user_id uuid, _role app_role)` `security definer`.
-- Domínio: `especies`, `racas`, `modalidades_servico`, `servicos_produtos`, `tutores`, `pets`, `ordens_servico`, `os_itens`, `historico_status_os`, `contratos`, `contrato_pets`, `contrato_servicos`, `ordens_pagamento`, `parcelas`, `sequencias` — colunas/tipos/FKs idênticos à migration TypeORM atual (`1783015793967-InitialSchema.ts`).
-- Referências a "usuário responsável" (ex.: `historico_status_os.usuario_id`) apontam para `auth.users(id)`.
-- GRANTs em todas as tabelas para `authenticated` e `service_role` (sem `anon`).
-- RLS habilitado em todas. Políticas iniciais:
-  - Leitura: qualquer usuário autenticado (as 4 roles precisam ver dados).
-  - Escrita: `has_role(auth.uid(), 'admin')` OR a role específica do módulo (ex.: `operacional` para OS, `financeiro` para pagamento, `recepcao` para tutores/pets), refletindo a matriz de `src/lib/permissions.ts`.
-- Trigger `updated_at` onde já existia.
+### 2. Reescrever `src/lib/api/*.functions.ts` (10 arquivos)
+Cada função deixa de importar `getDataSource()`/repositórios TypeORM e passa a usar `context.supabase` via `.middleware([requireSupabaseAuth])`. Ordem de execução:
 
-## Fase 2 — Exportar Railway e importar Supabase
+1. `auth.functions.ts` — `me()` lê `profiles` + `user_roles` do usuário logado.
+2. `lookups.functions.ts` — espécies, raças, modalidades, serviços/produtos (leituras simples).
+3. `tutores.functions.ts` — lista, detalhe, criar, editar, excluir; manter tradução do erro de CPF duplicado (`23505`).
+4. `pets.functions.ts` — CRUD + registro de óbito.
+5. `servicos-produtos.functions.ts` — CRUD.
+6. `ordens-servico.functions.ts` — CRUD, transições de status (histórico), gerar `numero` via RPC `next_sequence`.
+7. `contratos.functions.ts` — CRUD com `contrato_pets` e `contrato_servicos`.
+8. `pagamentos.functions.ts` — geração de ordens/parcelas, baixa de recebimento.
+9. `usuarios.functions.ts` — listar/atualizar via `profiles` + `user_roles` (criar novo usuário fica desabilitado nesta entrega; tratamento abaixo).
 
-Feito no sandbox (a Railway ainda responde de fora do Worker):
+As regras de acesso (quem pode fazer o quê) já estão nas policies RLS criadas na Fase 1 — o código apenas propaga o erro do Supabase quando um perfil não autorizado tenta escrever.
 
-1. `pg_dump`-livre: script `psql` na Railway usando `\copy ... to csv` para cada tabela na ordem topológica.
-2. Para cada linha de `usuarios` (Railway): criar usuário correspondente no Supabase Auth via `supabaseAdmin.auth.admin.createUser({ id: <mesmo uuid>, email, password: <random>, email_confirm: true })`. Trigger cria a profile; inserir a role em `user_roles`.
-3. Inserir demais tabelas via `supabase--insert` preservando UUIDs e ordem de FK.
-4. Enviar e-mail de "definir senha" (`supabase.auth.admin.generateLink({ type: 'recovery' })`) para cada usuário migrado — ou instruir que usem "Esqueci a senha" na primeira entrada. Confirmar com você qual dos dois.
+### 3. Limpeza (segurança e tamanho do bundle)
+- Remover `src/server/entities/`, `src/server/migrations/`, `src/server/data-source.ts`, `numbering.server.ts`, `auth.server.ts`, `session.server.ts`, `scripts/patch-dist.mjs`, `stubs/`.
+- Remover `src/start.ts` do meio do caminho de auth Supabase (já está); manter apenas `errorMiddleware`.
+- Reverter `vite.config.ts` (tirar alias `typeorm`, alias `tinyglobby`, `nitro.nodeCompat`) — não é mais necessário sem `pg`/`typeorm`.
+- `bun remove typeorm pg pg-cloudflare bcryptjs reflect-metadata` (+ tipos).
+- Apagar `DATABASE_URL` e `SESSION_SECRET` das secrets após deploy.
 
-## Fase 3 — Reescrita das server functions
+### 4. Cadastro de novos usuários — decisão desta entrega
+A tela de "Novo usuário" precisa criar conta no Auth (exige service role). Nesta entrega vou **manter a tela desabilitada com aviso** ("cadastro de novo usuário indisponível temporariamente — solicite ao admin"). Se quiser, na entrega seguinte eu implemento via uma server function admin (`.handler` com `supabaseAdmin` importado dinamicamente) que valida `has_role('admin')` antes de chamar `admin.createUser`.
 
-Substituir todo `getDataSource().getRepository(X)` por chamadas Supabase:
+## Comportamento após a entrega
 
-- `src/lib/api/auth.functions.ts` → deletar; login/logout passam a usar `supabase.auth.signInWithPassword` / `signOut` direto no client. `me()` vira `supabase.auth.getUser()` + join com `profiles` e `user_roles`.
-- Cada `*.functions.ts` (tutores, pets, ordens-servico, pagamentos, contratos, servicos-produtos, lookups, usuarios) reescrito para usar `requireSupabaseAuth` e `context.supabase.from(...)`. Filtros/paginação/ordenação convertidos para o builder do Supabase.
-- Numeração (`numbering.server.ts`) vira função Postgres `next_sequence(tipo text) returns int` chamada via `rpc`.
-- Regras de permissão continuam sendo validadas no server (`context.supabase.rpc('has_role', ...)`), além do RLS.
+- Login funciona no preview **e** no publicado com as contas atuais (`admin@qamigo.com`, `op@qamigo.com`, `fin@qamigo.com`, `rec@qamigo.com`) usando a senha temporária **`Qamigo@123`**.
+- Todos os dados históricos (tutores, pets, OS, histórico, contrato, pagamentos) continuam visíveis com os mesmos IDs.
+- Numeração (`OS-2026-NNNNN`, `OP-2026-NNNNN`) continua sequencial a partir do último valor da Railway (as sequências foram importadas).
+- Sem mais erros "Connection terminated unexpectedly", React #418 ou "Missing Supabase environment".
 
-## Fase 4 — Client / store / rotas
+## Verificação antes de encerrar
 
-- `src/store/authStore.ts` reescrito em cima de `supabase.auth` + `onAuthStateChange` (listener registrado no `__root.tsx`, filtrado como recomendado).
-- `src/routes/login.tsx` chama `supabase.auth.signInWithPassword`. Mantém olhinho de senha e mensagens de erro.
-- Rotas protegidas migradas para o layout `_authenticated/` gerenciado (com `ssr: false`), removendo o gate atual em `_app.tsx`.
-- `Topbar` e `useRoleGuard` leem role via `user_roles`/profile hidratados no login.
+1. Build local sem erros.
+2. Login em preview com `admin@qamigo.com` → dashboard carrega, listagens de tutores/pets/OS mostram os dados migrados.
+3. Publicar e repetir o teste no `www` (Playwright).
+4. Criar 1 tutor de teste e apagar, garantindo escrita/RLS ok.
 
-## Fase 5 — Limpeza (mesma entrega)
+## Detalhes técnicos
 
-- Remover: `src/server/entities/`, `src/server/data-source.ts`, `src/server/scripts/`, `src/server/seeds/`, `src/server/migrations/`, `src/server/stubs/`, `src/server/session.server.ts`, `src/server/auth.server.ts`, `src/server/numbering.server.ts` (vira RPC), `patch-dist.mjs`, `Dockerfile`, `docker-compose.yml`, `docker/`.
-- `package.json`: remover `typeorm`, `pg`, `pg-cloudflare`, `bcryptjs`, `reflect-metadata`, `typeorm-naming-strategies`, `@types/bcryptjs`, `@types/pg`.
-- `vite.config.ts`: remover aliases `typeorm`/`tinyglobby`/`pg-cloudflare`, remover `nitro.nodeCompat` extra se não for mais necessário.
-- Secrets: `DATABASE_URL` e `SESSION_SECRET` deixam de ser usados (posso removê-los ao final ou você remove pela UI).
-- `.env.example` reduzido.
+- `requireSupabaseAuth` middleware já existe (`@/integrations/supabase/auth-middleware`) e devolve `context.supabase` já autenticado como o usuário — respeita as RLS criadas na Fase 1.
+- `attachSupabaseAuth` precisa voltar em `src/start.ts` porque agora as server fns usam `requireSupabaseAuth`. Não é mais um problema como antes, porque agora o cliente Supabase tem credenciais válidas (não é mais placeholder).
+- `next_sequence(tipo, ano)` é chamada via `supabase.rpc('next_sequence', { _tipo, _ano })`.
+- Nenhuma migration nova de schema é necessária — a Fase 1 já cobriu tudo.
 
-## Riscos e mitigação
+## Fora de escopo (fica para depois se você quiser)
 
-- **Perda de dados**: faço dump CSV completo da Railway antes de qualquer INSERT e guardo em `/mnt/documents/` para você baixar.
-- **Roles/permissões**: matriz atual (`src/lib/permissions.ts`) vira políticas RLS + `has_role`. Se alguma tela quebrar por RLS restritiva demais, ajusto política em migration.
-- **Numeração de OS/pagamento**: `sequencias` migrada, `next_sequence()` implementa o mesmo lock por nome.
-- **Sessão em iframe do preview**: o cookie custom com `SameSite=None; Partitioned` sai; a sessão passa a ser do Supabase (localStorage), padrão do template.
-- **Publicado**: fim da dependência de TCP para Railway → o erro `Connection terminated unexpectedly` desaparece por construção.
-
-## Ordem real de execução
-
-1. Migration Fase 1 (você aprova).
-2. Dump CSV da Railway + criação dos auth users + inserts (relato o resultado).
-3. Reescrita de código (Fases 3 e 4) num único conjunto de edits.
-4. Limpeza (Fase 5).
-5. Typecheck + login de teste no preview.
-6. Publicar.
-
-Confirma que posso avançar assim? A migration da Fase 1 vai aparecer para você aprovar antes de rodar.
+- Fluxo real de "esqueci a senha" com e-mail SMTP configurado.
+- Cadastro de novos usuários pela UI (item 4 acima).
+- Ajustar warnings de `search_path` nas funções `SECURITY DEFINER` (são warnings, não bloqueiam).

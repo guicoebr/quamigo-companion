@@ -38,7 +38,11 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error }: { error: Error }) {
   const router = useRouter();
-  const isExpiredSession = error.message === "Não autenticado.";
+  const msg = (error.message || "").toLowerCase();
+  const isExpiredSession =
+    msg.includes("não autenticado") ||
+    msg.includes("unauthorized") ||
+    msg.includes("jwt");
 
   useEffect(() => {
     if (isExpiredSession) {

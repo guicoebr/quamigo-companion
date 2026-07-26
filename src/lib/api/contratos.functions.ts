@@ -1,59 +1,79 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getDataSource } from "@/server/data-source";
-import {
-  Contrato as ContratoEntity,
-  ContratoPet as ContratoPetEntity,
-  ContratoServico as ContratoServicoEntity,
-  OrdemPagamento as OrdemPagamentoEntity,
-  Parcela as ParcelaEntity,
-  Pet as PetEntity,
-} from "@/server/entities";
-import { requireAuth, requirePermission } from "@/server/session.server";
-import { nextNumero } from "@/server/numbering.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Contrato } from "@/types/contrato";
 import type { Pagamento } from "@/types/pagamento";
 
-function toContratoDTO(c: ContratoEntity): Contrato {
+type ContratoRow = {
+  id: string;
+  numero: string;
+  tutor_id: string;
+  modalidade_id: string;
+  status: Contrato["status"];
+  valor_mensal: number | string;
+  periodicidade: Contrato["periodicidade"];
+  inicio_vigencia: string;
+  fim_vigencia: string | null;
+  observacoes: string | null;
+  criado_em: string;
+  contrato_pets: { pet_id: string }[] | null;
+  contrato_servicos: { servico_produto_id: string }[] | null;
+};
+
+const CONTRATO_SELECT =
+  "id, numero, tutor_id, modalidade_id, status, valor_mensal, periodicidade, inicio_vigencia, fim_vigencia, observacoes, criado_em, contrato_pets(pet_id), contrato_servicos(servico_produto_id)";
+
+function toContratoDTO(c: ContratoRow): Contrato {
   return {
     id: c.id,
     numero: c.numero,
-    tutorId: c.tutorId,
-    petsIds: (c.contratoPets ?? []).map((cp) => cp.petId),
-    servicosIds: (c.contratoServicos ?? []).map((cs) => cs.servicoProdutoId),
-    modalidadeId: c.modalidadeId,
+    tutorId: c.tutor_id,
+    petsIds: (c.contrato_pets ?? []).map((cp) => cp.pet_id),
+    servicosIds: (c.contrato_servicos ?? []).map((cs) => cs.servico_produto_id),
+    modalidadeId: c.modalidade_id,
     status: c.status,
-    valorMensal: c.valorMensal,
+    valorMensal: Number(c.valor_mensal),
     periodicidade: c.periodicidade,
-    inicioVigencia: c.inicioVigencia,
-    fimVigencia: c.fimVigencia ?? undefined,
+    inicioVigencia: c.inicio_vigencia,
+    fimVigencia: c.fim_vigencia ?? undefined,
     observacoes: c.observacoes ?? undefined,
-    criadoEm: c.criadoEm.toISOString(),
+    criadoEm: c.criado_em,
   };
 }
 
-export const listContratos = createServerFn({ method: "GET" }).handler(
-  async (): Promise<Contrato[]> => {
-    await requireAuth();
-    const ds = await getDataSource();
-    const contratos = await ds.getRepository(ContratoEntity).find({
-      relations: { contratoPets: true, contratoServicos: true },
-      order: { criadoEm: "DESC" },
-    });
-    return contratos.map(toContratoDTO);
-  },
-);
+async function nextNumero(
+  supabase: any,
+  tipo: "OS" | "PG" | "CT",
+): Promise<string> {
+  const ano = new Date().getFullYear();
+  const { data, error } = await supabase.rpc("next_sequence", { _tipo: tipo, _ano: ano });
+  if (error) throw new Error(error.message);
+  const n = Number(data);
+  return `${tipo}-${ano}-${String(n).padStart(5, "0")}`;
+}
+
+export const listContratos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Contrato[]> => {
+    const { data, error } = await context.supabase
+      .from("contratos")
+      .select(CONTRATO_SELECT)
+      .order("criado_em", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => toContratoDTO(r as unknown as ContratoRow));
+  });
 
 export const getContrato = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ id: z.string().uuid() }))
-  .handler(async ({ data }): Promise<Contrato | null> => {
-    await requireAuth();
-    const ds = await getDataSource();
-    const contrato = await ds.getRepository(ContratoEntity).findOne({
-      where: { id: data.id },
-      relations: { contratoPets: true, contratoServicos: true },
-    });
-    return contrato ? toContratoDTO(contrato) : null;
+  .handler(async ({ data, context }): Promise<Contrato | null> => {
+    const { data: row, error } = await context.supabase
+      .from("contratos")
+      .select(CONTRATO_SELECT)
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return row ? toContratoDTO(row as unknown as ContratoRow) : null;
   });
 
 const createContratoInput = z.object({
@@ -69,151 +89,156 @@ const createContratoInput = z.object({
 });
 
 export const createContrato = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(createContratoInput)
-  .handler(async ({ data }): Promise<Contrato> => {
-    await requirePermission("contrato.gerenciar");
-    const ds = await getDataSource();
+  .handler(async ({ data, context }): Promise<Contrato> => {
+    // Sanidade: pets pertencem ao tutor
+    const { data: pets, error: petsErr } = await context.supabase
+      .from("pets")
+      .select("id, nome, tutor_id")
+      .in("id", data.petsIds);
+    if (petsErr) throw new Error(petsErr.message);
+    if (!pets || pets.length !== data.petsIds.length || pets.some((p) => p.tutor_id !== data.tutorId)) {
+      throw new Error("Pet inválido para este tutor.");
+    }
 
-    return ds.transaction(async (manager) => {
-      const pets = await manager
-        .getRepository(PetEntity)
-        .createQueryBuilder("p")
-        .where("p.id IN (:...ids)", { ids: data.petsIds })
-        .getMany();
-      if (pets.length !== data.petsIds.length || pets.some((p) => p.tutorId !== data.tutorId)) {
-        throw new Error("Pet inválido para este tutor.");
-      }
+    // Conflito: pet já com contrato ativo
+    const { data: conflitos, error: cErr } = await context.supabase
+      .from("contrato_pets")
+      .select("pet_id, contratos!inner(status)")
+      .in("pet_id", data.petsIds)
+      .eq("contratos.status", "ativo");
+    if (cErr) throw new Error(cErr.message);
+    if (conflitos && conflitos.length > 0) {
+      const petConflito = pets.find((p) => p.id === conflitos[0].pet_id);
+      throw new Error(`O pet ${petConflito?.nome ?? ""} já possui contrato ativo.`);
+    }
 
-      // Regra "um pet só pode ter um contrato ativo por vez" — validada aqui
-      // (ver comentário em contrato-pet.entity.ts).
-      const conflito = await manager
-        .getRepository(ContratoPetEntity)
-        .createQueryBuilder("cp")
-        .innerJoin("cp.contrato", "c")
-        .innerJoin("cp.pet", "pet")
-        .where("cp.pet_id IN (:...ids)", { ids: data.petsIds })
-        .andWhere("c.status = 'ativo'")
-        .select("pet.nome", "nome")
-        .getRawOne<{ nome: string }>();
-      if (conflito) {
-        throw new Error(`O pet ${conflito.nome} já possui contrato ativo.`);
-      }
+    const numero = await nextNumero(context.supabase, "CT");
 
-      const numero = await nextNumero(manager, "CT");
-      const contrato = await manager.getRepository(ContratoEntity).save(
-        manager.getRepository(ContratoEntity).create({
-          numero,
-          tutorId: data.tutorId,
-          modalidadeId: data.modalidadeId,
-          status: "ativo",
-          valorMensal: data.valorMensal,
-          periodicidade: data.periodicidade,
-          inicioVigencia: data.inicioVigencia,
-          fimVigencia: data.fimVigencia || null,
-          observacoes: data.observacoes || null,
-        }),
+    const { data: contrato, error: iErr } = await context.supabase
+      .from("contratos")
+      .insert({
+        numero,
+        tutor_id: data.tutorId,
+        modalidade_id: data.modalidadeId,
+        status: "ativo",
+        valor_mensal: data.valorMensal,
+        periodicidade: data.periodicidade,
+        inicio_vigencia: data.inicioVigencia,
+        fim_vigencia: data.fimVigencia || null,
+        observacoes: data.observacoes || null,
+      })
+      .select("id")
+      .single();
+    if (iErr) throw new Error(iErr.message);
+
+    const { error: cpErr } = await context.supabase
+      .from("contrato_pets")
+      .insert(data.petsIds.map((pet_id) => ({ contrato_id: contrato.id, pet_id })));
+    if (cpErr) throw new Error(cpErr.message);
+
+    const { error: csErr } = await context.supabase
+      .from("contrato_servicos")
+      .insert(
+        data.servicosIds.map((servico_produto_id) => ({
+          contrato_id: contrato.id,
+          servico_produto_id,
+        })),
       );
+    if (csErr) throw new Error(csErr.message);
 
-      await manager
-        .getRepository(ContratoPetEntity)
-        .save(
-          data.petsIds.map((petId) =>
-            manager.getRepository(ContratoPetEntity).create({ contratoId: contrato.id, petId }),
-          ),
-        );
-      await manager
-        .getRepository(ContratoServicoEntity)
-        .save(
-          data.servicosIds.map((servicoProdutoId) =>
-            manager
-              .getRepository(ContratoServicoEntity)
-              .create({ contratoId: contrato.id, servicoProdutoId }),
-          ),
-        );
-
-      const completo = await manager.getRepository(ContratoEntity).findOneOrFail({
-        where: { id: contrato.id },
-        relations: { contratoPets: true, contratoServicos: true },
-      });
-      return toContratoDTO(completo);
-    });
+    const { data: completo, error: fErr } = await context.supabase
+      .from("contratos")
+      .select(CONTRATO_SELECT)
+      .eq("id", contrato.id)
+      .single();
+    if (fErr) throw new Error(fErr.message);
+    return toContratoDTO(completo as unknown as ContratoRow);
   });
 
 /**
- * Gera a cobrança do mês corrente para um contrato ativo. O índice único
- * (contrato_id, competencia) em ordens_pagamento é a garantia real contra
- * cobrança duplicada no mesmo mês.
+ * Gera cobrança do mês corrente para um contrato ativo.
+ * Índice único (contrato_id, competencia) em `ordens_pagamento` protege contra duplicata.
  */
 export const gerarCobrancaContrato = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ contratoId: z.string().uuid() }))
-  .handler(async ({ data }): Promise<Pagamento> => {
-    await requirePermission("pagamento.gerenciar");
-    const ds = await getDataSource();
+  .handler(async ({ data, context }): Promise<Pagamento> => {
+    const { data: contrato, error: cErr } = await context.supabase
+      .from("contratos")
+      .select("id, tutor_id, valor_mensal, status")
+      .eq("id", data.contratoId)
+      .maybeSingle();
+    if (cErr) throw new Error(cErr.message);
+    if (!contrato) throw new Error("Contrato não encontrado.");
+    if (contrato.status !== "ativo") throw new Error("Contrato não está ativo.");
 
-    return ds.transaction(async (manager) => {
-      const contrato = await manager
-        .getRepository(ContratoEntity)
-        .findOneBy({ id: data.contratoId });
-      if (!contrato) throw new Error("Contrato não encontrado.");
-      if (contrato.status !== "ativo") throw new Error("Contrato não está ativo.");
+    const agora = new Date();
+    const competencia = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-01`;
 
-      const agora = new Date();
-      const competencia = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-01`;
-      const jaExiste = await manager.getRepository(OrdemPagamentoEntity).findOneBy({
-        contratoId: contrato.id,
+    const { data: existente } = await context.supabase
+      .from("ordens_pagamento")
+      .select("id")
+      .eq("contrato_id", contrato.id)
+      .eq("competencia", competencia)
+      .maybeSingle();
+    if (existente) {
+      const mm = competencia.slice(5, 7);
+      throw new Error(`Já existe uma cobrança gerada para ${mm}/${agora.getFullYear()}.`);
+    }
+
+    const numero = await nextNumero(context.supabase, "PG");
+    const valor = Number(contrato.valor_mensal);
+
+    const { data: pag, error: pErr } = await context.supabase
+      .from("ordens_pagamento")
+      .insert({
+        numero,
+        origem: "contrato",
+        contrato_id: contrato.id,
+        tutor_id: contrato.tutor_id,
+        valor_total: valor,
+        status: "aberto",
         competencia,
-      });
-      if (jaExiste) {
-        const mm = competencia.slice(5, 7);
-        throw new Error(`Já existe uma cobrança gerada para ${mm}/${agora.getFullYear()}.`);
-      }
+      })
+      .select("id, numero, origem, contrato_id, os_id, tutor_id, valor_total, status, criado_em")
+      .single();
+    if (pErr) throw new Error(pErr.message);
 
-      const numero = await nextNumero(manager, "PG");
-      const pagamento = await manager.getRepository(OrdemPagamentoEntity).save(
-        manager.getRepository(OrdemPagamentoEntity).create({
-          numero,
-          origem: "contrato",
-          contratoId: contrato.id,
-          tutorId: contrato.tutorId,
-          valorTotal: contrato.valorMensal,
-          status: "aberto",
-          competencia,
-        }),
-      );
+    const vencimento = new Date();
+    vencimento.setDate(vencimento.getDate() + 7);
+    const { data: parc, error: paErr } = await context.supabase
+      .from("parcelas")
+      .insert({
+        ordem_pagamento_id: pag.id,
+        numero: 1,
+        total_parcelas: 1,
+        valor,
+        status: "pendente",
+        data_vencimento: vencimento.toISOString().slice(0, 10),
+      })
+      .select("id, numero, valor, data_vencimento, status")
+      .single();
+    if (paErr) throw new Error(paErr.message);
 
-      const vencimento = new Date();
-      vencimento.setDate(vencimento.getDate() + 7);
-      await manager.getRepository(ParcelaEntity).save(
-        manager.getRepository(ParcelaEntity).create({
-          ordemPagamentoId: pagamento.id,
-          numero: 1,
-          totalParcelas: 1,
-          valor: contrato.valorMensal,
-          status: "pendente",
-          dataVencimento: vencimento.toISOString().slice(0, 10),
-        }),
-      );
-
-      const completo = await manager.getRepository(OrdemPagamentoEntity).findOneOrFail({
-        where: { id: pagamento.id },
-        relations: { parcelas: true },
-      });
-      return {
-        id: completo.id,
-        numero: completo.numero,
-        origem: completo.origem,
-        contratoId: completo.contratoId ?? undefined,
-        tutorId: completo.tutorId,
-        valorTotal: completo.valorTotal,
-        status: completo.status,
-        parcelas: completo.parcelas.map((p) => ({
-          id: p.id,
-          numero: p.numero,
-          valor: p.valor,
-          vencimento: p.dataVencimento,
-          status: p.status,
-        })),
-        criadoEm: completo.criadoEm.toISOString(),
-      };
-    });
+    return {
+      id: pag.id,
+      numero: pag.numero,
+      origem: pag.origem as Pagamento["origem"],
+      contratoId: pag.contrato_id ?? undefined,
+      tutorId: pag.tutor_id,
+      valorTotal: Number(pag.valor_total),
+      status: pag.status as Pagamento["status"],
+      parcelas: [
+        {
+          id: parc.id,
+          numero: parc.numero,
+          valor: Number(parc.valor),
+          vencimento: parc.data_vencimento,
+          status: parc.status as Pagamento["parcelas"][number]["status"],
+        },
+      ],
+      criadoEm: pag.criado_em,
+    };
   });

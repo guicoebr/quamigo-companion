@@ -1,44 +1,66 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getDataSource } from "@/server/data-source";
-import { Pet as PetEntity } from "@/server/entities";
-import { requireAuth, requirePermission } from "@/server/session.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Pet } from "@/types/pet";
 
-function toPetDTO(p: PetEntity): Pet {
+type PetRow = {
+  id: string;
+  tutor_id: string;
+  especie_id: string | null;
+  raca_id: string | null;
+  nome: string;
+  sexo: string;
+  cor: string;
+  peso_kg: number | string;
+  data_nascimento: string | null;
+  data_falecimento: string | null;
+  observacoes: string | null;
+  criado_em: string;
+};
+
+const PET_COLS =
+  "id, tutor_id, especie_id, raca_id, nome, sexo, cor, peso_kg, data_nascimento, data_falecimento, observacoes, criado_em";
+
+function toPetDTO(p: PetRow): Pet {
   return {
     id: p.id,
-    tutorId: p.tutorId,
+    tutorId: p.tutor_id,
     nome: p.nome,
-    especieId: p.especieId ?? "",
-    racaId: p.racaId ?? "",
-    sexo: p.sexo,
+    especieId: p.especie_id ?? "",
+    racaId: p.raca_id ?? "",
+    sexo: p.sexo as Pet["sexo"],
     cor: p.cor,
-    pesoKg: p.pesoKg,
-    dataNascimento: p.dataNascimento ?? undefined,
-    dataFalecimento: p.dataFalecimento ?? undefined,
+    pesoKg: Number(p.peso_kg),
+    dataNascimento: p.data_nascimento ?? undefined,
+    dataFalecimento: p.data_falecimento ?? undefined,
     observacoes: p.observacoes ?? undefined,
-    criadoEm: p.criadoEm.toISOString(),
+    criadoEm: p.criado_em,
   };
 }
 
-export const listPets = createServerFn({ method: "GET" }).handler(async (): Promise<Pet[]> => {
-  await requireAuth();
-  const ds = await getDataSource();
-  const pets = await ds.getRepository(PetEntity).find({ order: { nome: "ASC" } });
-  return pets.map(toPetDTO);
-});
+export const listPets = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Pet[]> => {
+    const { data, error } = await context.supabase.from("pets").select(PET_COLS).order("nome");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => toPetDTO(r as PetRow));
+  });
 
 export const getPet = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ id: z.string().uuid() }))
-  .handler(async ({ data }): Promise<Pet | null> => {
-    await requireAuth();
-    const ds = await getDataSource();
-    const pet = await ds.getRepository(PetEntity).findOneBy({ id: data.id });
-    return pet ? toPetDTO(pet) : null;
+  .handler(async ({ data, context }): Promise<Pet | null> => {
+    const { data: row, error } = await context.supabase
+      .from("pets")
+      .select(PET_COLS)
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return row ? toPetDTO(row as PetRow) : null;
   });
 
 export const createPet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
       tutorId: z.string().uuid(),
@@ -52,26 +74,28 @@ export const createPet = createServerFn({ method: "POST" })
       observacoes: z.string().optional(),
     }),
   )
-  .handler(async ({ data }): Promise<Pet> => {
-    await requirePermission("pet.criar");
-    const ds = await getDataSource();
-    const saved = await ds.getRepository(PetEntity).save(
-      ds.getRepository(PetEntity).create({
-        tutorId: data.tutorId,
+  .handler(async ({ data, context }): Promise<Pet> => {
+    const { data: row, error } = await context.supabase
+      .from("pets")
+      .insert({
+        tutor_id: data.tutorId,
         nome: data.nome,
-        especieId: data.especieId,
-        racaId: data.racaId,
+        especie_id: data.especieId,
+        raca_id: data.racaId,
         sexo: data.sexo,
         cor: data.cor,
-        pesoKg: data.pesoKg,
-        dataNascimento: data.dataNascimento || null,
+        peso_kg: data.pesoKg,
+        data_nascimento: data.dataNascimento || null,
         observacoes: data.observacoes || null,
-      }),
-    );
-    return toPetDTO(saved);
+      })
+      .select(PET_COLS)
+      .single();
+    if (error) throw new Error(error.message);
+    return toPetDTO(row as PetRow);
   });
 
 export const updatePet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
       id: z.string().uuid(),
@@ -89,9 +113,26 @@ export const updatePet = createServerFn({ method: "POST" })
       }),
     }),
   )
-  .handler(async ({ data }): Promise<Pet> => {
-    await requirePermission("pet.editar");
-    const ds = await getDataSource();
-    await ds.getRepository(PetEntity).update(data.id, data.patch);
-    return toPetDTO(await ds.getRepository(PetEntity).findOneByOrFail({ id: data.id }));
+  .handler(async ({ data, context }): Promise<Pet> => {
+    const p = data.patch;
+    const patch: Record<string, unknown> = {};
+    if (p.tutorId !== undefined) patch.tutor_id = p.tutorId;
+    if (p.nome !== undefined) patch.nome = p.nome;
+    if (p.especieId !== undefined) patch.especie_id = p.especieId;
+    if (p.racaId !== undefined) patch.raca_id = p.racaId;
+    if (p.sexo !== undefined) patch.sexo = p.sexo;
+    if (p.cor !== undefined) patch.cor = p.cor;
+    if (p.pesoKg !== undefined) patch.peso_kg = p.pesoKg;
+    if (p.dataNascimento !== undefined) patch.data_nascimento = p.dataNascimento || null;
+    if (p.dataFalecimento !== undefined) patch.data_falecimento = p.dataFalecimento || null;
+    if (p.observacoes !== undefined) patch.observacoes = p.observacoes || null;
+
+    const { data: row, error } = await context.supabase
+      .from("pets")
+      .update(patch as never)
+      .eq("id", data.id)
+      .select(PET_COLS)
+      .single();
+    if (error) throw new Error(error.message);
+    return toPetDTO(row as PetRow);
   });
